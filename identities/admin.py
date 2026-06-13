@@ -1,3 +1,8 @@
 from django.contrib import admin
+from .models import IdentityProfile, Relationship, DisclosureRule
 
-# Register your models here.
+admin.site.register(IdentityProfile)
+admin.site.register(Relationship)
+admin.site.register(DisclosureRule)
+##username: edrikang
+##password: !@#$4321
