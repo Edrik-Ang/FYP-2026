@@ -3,7 +3,7 @@ from django.conf import settings
 
 ##Each identity a user creates will be stored here,
 class IdentityProfile(models.Model):
-    CONTEXT_CHOICES = [
+    CONTEXT_CHOICES = [ ##Default to just 3 types of context for now, will expand to fit dynamic context categories in the future
         ('work', 'Work'),
         ('personal', 'Personal'),
         ('family', 'Family'),
@@ -11,7 +11,7 @@ class IdentityProfile(models.Model):
     owner = models.ForeignKey(settings.AUTH_USER_MODEL, 
                               on_delete=models.CASCADE,
                               related_name='identities') ##Which user owns this identity
-    identity_name = models.CharField(max_length=200)
+    label = models.CharField(max_length=200)
     display_name = models.CharField(max_length=200)
     description = models.TextField(blank=True)
     context_category = models.CharField(max_length=20, choices=CONTEXT_CHOICES, default='personal')
@@ -64,7 +64,7 @@ class DisclosureRule(models.Model):
     ) ##Under what relationship type can the Work_identity be disclosed to the identity
     field_name = models.CharField(
         max_length=100,
-        choices=FIELD_CHOICES
+        choices=FIELD_CHOICES,
     ) 
     is_visible = models.BooleanField(default=False) ##Is this field visible to the specified relationship type
     created_at = models.DateTimeField(auto_now_add=True)

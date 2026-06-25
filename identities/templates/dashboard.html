@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+ <head>
+    <title>Dashboard Page</title>
+ </head>   
+
+ <body>
+    <h1> Dashboard Page, welcome {{ request.user.username }}! </h1>
+    <h2> Your identities </h2>
+    {% for identity in identities %}
+        <p>
+            <strong>{{identity.identity_name}}</strong><br>
+            Display Name: {{identity.display_name}}<br>
+            Description: {{identity.description}}<br>
+        </p>
+    {% empty %}
+        <p>
+            You have not created any identities yet.
+        </p>
+    {% endfor %}
+
+    <h2>View another User's Profile</h2>
+    <form method="GET" action="{% url 'profile_redirect' %}">
+        <select name="username" required>
+            <option value="">Select a user</option>
+        
+            {% for user in users %}
+                <option value="{{user.username}}">
+                    {{user.username}}
+                </option>
+            {% endfor %}
+        </select>
+        <button type="submit">View Profile</button>
+    </form>
+ </body>
+</html>

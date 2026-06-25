@@ -6,3 +6,5 @@ admin.site.register(Relationship)
 admin.site.register(DisclosureRule)
 ##username: edrikang
 ##password: !@#$4321
+## Users: John 
+# password: Password!1
