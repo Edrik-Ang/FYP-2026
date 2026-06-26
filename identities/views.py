@@ -1,3 +1,5 @@
+from urllib import request
+
 from django.shortcuts import redirect, render, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import authenticate, get_user_model, login
@@ -66,7 +68,6 @@ def profile_redirect_view(request):
 
 ### register_view function, page to view the registration form for new users
 def register_view(request):
-
     return render(request, 'register.html')
 
 

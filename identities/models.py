@@ -11,7 +11,7 @@ class IdentityProfile(models.Model):
     owner = models.ForeignKey(settings.AUTH_USER_MODEL, 
                               on_delete=models.CASCADE,
                               related_name='identities') ##Which user owns this identity
-    label = models.CharField(max_length=200)
+    identity_name = models.CharField(max_length=200)
     display_name = models.CharField(max_length=200)
     description = models.TextField(blank=True)
     context_category = models.CharField(max_length=20, choices=CONTEXT_CHOICES, default='personal')
@@ -73,4 +73,4 @@ class DisclosureRule(models.Model):
         unique_together = ('identity', 'relationship_type', 'field_name')
 
     def __str__(self):
-        return f"{self.identity.identity_name} visible to {self.relationship_type}"
+        return f"{self.identity.owner} {self.identity.identity_name} 's {self.field_name} visible to {self.relationship_type}"
