@@ -1,8 +1,6 @@
-from urllib import request
-
 from django.shortcuts import redirect, render, get_object_or_404
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth import authenticate, get_user_model, login
+from django.contrib.auth import authenticate, get_user_model, login, logout
 from .models import *
 
 User = get_user_model()
@@ -58,6 +56,12 @@ def dashboard_view(request):
             "identities":identities
         }
     )
+##logout_view function, logs out the user and redirects to login page
+@login_required
+def logout_view(request):
+    logout(request)
+    return redirect('login')
+
 ##When a user search for a profile, this will redirect to profile view of the user searched for.
 @login_required
 def profile_redirect_view(request):
