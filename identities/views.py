@@ -1,3 +1,5 @@
+## views.py file for identities app.
+## handles the routing and logic of urls to correct views
 from django.shortcuts import redirect, render, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import authenticate, get_user_model, login, logout
