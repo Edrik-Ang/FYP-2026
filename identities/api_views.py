@@ -1,4 +1,4 @@
-## api.py file for API endpoints in the idnetities app.
+## api.py file for API endpoints in the identities app.
 from rest_framework import generics, status
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -6,60 +6,96 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.authtoken.models import Token
 from django.contrib.auth import authenticate, get_user_model
 from django.shortcuts import get_object_or_404
-from .models import IdentityProfile, Relationship, DisclosureRule
+from rest_framework.exceptions import ValidationError
+from .models import IdentityProfile, Relationship, DisclosureRule, Context
 from .serializers import (
     RegisterSerializer,
     IdentityProfileSerializer,
     RelationshipSerializer,
-    DisclosureRuleSerializer
+    DisclosureRuleSerializer, 
+    ContextSerializer,
+    VisibleIdentitySerializer
 )
+from .disclosure import get_effective_contexts, get_visible_fields
 
 User = get_user_model()
 
-### API response when user register, returns the token and username
-class RegisterAPIView(APIView):
+## RegisterAPIView handles user registration, returns auth token and username on successful registration.
+## uses RegisterSerializer to validate and create new users, and generates an auth token for the newly created user.
+class RegisterAPIView(generics.CreateAPIView):
+    """POST /api/register/ - create a new user (+ default public context), returns an auth token.
+    """
+    queryset = User.objects.all()
+    serializer_class = RegisterSerializer
     permission_classes = [AllowAny]
 
-    def post(self, request):
-        serializer = RegisterSerializer(data=request.data)
-        if serializer.is_valid():
-            user = serializer.save()
-            token, _ = Token.objects.get_or_create(user=user)
-            return Response(
-                {
-                    'token': token.key, 
-                    'username': user.username,
-                },
-                status=status.HTTP_201_CREATED
-            )
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    ## custom create method to handle user registration and token creation
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True) 
+        user = serializer.save()
+        token, _ = Token.objects.get_or_create(user=user)
+        return Response({'username': user.username, 'token': token.key}, status=status.HTTP_201_CREATED)     
+
+    # def post(self, request):
+    #     serializer = RegisterSerializer(data=request.data)
+    #     if serializer.is_valid():
+    #         user = serializer.save()
+    #         token, _ = Token.objects.get_or_create(user=user)
+    #         return Response(
+    #             {
+    #                 'token': token.key, 
+    #                 'username': user.username,
+    #             },
+    #             status=status.HTTP_201_CREATED
+    #         )
+    #     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    ##Include OIDC login and registration endpoints for third-party authentication providers. 
+    # This will allow users to log in or register using their existing accounts from providers like Google, Facebook, or GitHub.
+
     
-## API response when user log in, returns the token and username
+## LoginAPIView class handles user login, returns auth token and username on successful authentication.
+# Uses the authenticate method to verify user credentials and generates an auth token for the authenticated user. 
 class LoginAPIView(APIView):
+    """POST /api/login/ - exchanges username-password for an auth token."""
     permission_classes = [AllowAny]
 
     def post(self, request):
         username = request.data.get('username')
         password = request.data.get('password')
         user = authenticate(request, username=username, password=password)
-        if user:
-            token, _ = Token.objects.get_or_create(user=user)
-            return Response(
-                {
-                    'token': token.key,
-                    'username': user.username,
-                },
-                status=status.HTTP_200_OK
-            )
-        return Response(
-            {'error': 'Invalid credentials'},
-            status=status.HTTP_401_UNAUTHORIZED
-        )
-## API resposne when user log out, deletes the token and returns 204 status code
+        if user is None:
+            return Response({'error': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
+        token, _ = Token.objects.get_or_create(user=user)
+        return Response({'username':user.username,'token': token.key})
+
+
+## LogoutAPIView class handles user logouts, delete the auth token for authenticated users.
+# This ensures that the user is logged out and cannot use the token for further authentication.        
 class LogoutAPIView(APIView):
     def post(self, request):
         request.user.auth_token.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+## ContextListCreateView class allows users to list and create contexts
+# Uses context serializer to serialize the data and requires the user to be authenticated.
+class ContextListCreateView(generics.ListCreateAPIView):
+    serializer_class = ContextSerializer
+    def get_queryset(self):
+        return Context.objects.filter(owner=self.request.user)
+    def perform_create(self, serializer):
+        serializer.save(owner=self.request.user)
+
+## ContextDetailView class allows users to retrieve, update, and delete a specific context.
+# Uses context serializer to serialize the data and requires the user to be authenticated.
+class ContextDetailView(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = ContextSerializer
+    def get_queryset(self):
+        return Context.objects.filter(owner=self.request.user)
+    def perform_destroy(self, instance):
+        if instance.is_public_default:
+            raise ValidationError("Cannot delete the default public context.")
+        instance.delete()
     
 ### APIs for the identities
 ##This API view allows users to list and create identity profiles. It uses the IdentityProfileSerializer to serialize the data and requires the user to be authenticated.
@@ -107,38 +143,31 @@ class DisclosureRuleDetailView(generics.RetrieveUpdateDestroyAPIView):
         return DisclosureRule.objects.filter(
             identity__owner=self.request.user
         )
-## Profile View (disclosure engine)
+## ProfileAPIView class retrieves profile information for a specific user based on username. 
+# Uses VisibleIdentitySerialzier to serialize the data and requires the user to be authenticated.
 class ProfileAPIView(APIView):
     def get(self, request, username):
         owner = get_object_or_404(User, username=username)
-
-        try:
-            relationship = Relationship.objects.get(
-                owner=owner,
-                target_user=request.user
-            )
-            rel_type = relationship.relationship_type
-        except Relationship.DoesNotExist:
-            rel_type = None
-
         identities = IdentityProfile.objects.filter(owner=owner)
-        visible_data = []
-        for identity in identities:
-            disclosed_fields = DisclosureRule.objects.filter(
-                identity=identity,
-                relationship_type=rel_type,
-                is_visible=True
-            ).values_list('field_name', flat=True)
-
-            filtered_identity = {}
-            for field in disclosed_fields:
-                filtered_identity[field] = getattr(identity, field)
-            
-            if filtered_identity:
-                visible_data.append(filtered_identity)
         
-        return Response({
-            'owner': owner.username,
-            'relationship_type': rel_type,
-            'visible_identities': visible_data
-        })
+        if owner == request.user:
+            visible_data = [
+                {
+                    'identity_id': i.id, 'context_name': i.context.name,
+                    'visible_fields':{
+                        f:getattr(i,f) for f, _ in DisclosureRule.FIELD_CHOICES},
+                } for i in identities
+            ]
+        else:
+            viewer_contexts = get_effective_contexts(owner, request.user)
+            visible_data = []
+            for identity in identities:
+                fields = get_visible_fields(identity, viewer_contexts)
+                if fields:
+                    visible_data.append({
+                        'identity_id': identity.id, 'context_name': identity.context.name,
+                        'visible_fields': {f: getattr(identity, f) for f in fields},
+                    })
+
+        serializer = VisibleIdentitySerializer(visible_data, many=True)
+        return Response({'owner': owner.username, 'visible_identities':serializer.data})

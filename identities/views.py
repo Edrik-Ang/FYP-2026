@@ -3,7 +3,9 @@
 from django.shortcuts import redirect, render, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import authenticate, get_user_model, login, logout
+from .serializers import RegisterSerializer
 from .models import *
+from .disclosure import get_effective_contexts, get_visible_fields
 
 User = get_user_model()
 
@@ -74,6 +76,13 @@ def profile_redirect_view(request):
 
 ### register_view function, page to view the registration form for new users
 def register_view(request):
+    if request.method == 'POST':
+        serializer = RegisterSerializer(data=request.POST)
+        if serializer.is_valid():
+            user = serializer.save()
+            login(request, user) # log them in after registration
+            return redirect('dashboard')
+        return render(request, 'register.html', {'errors': serializer.errors})
     return render(request, 'register.html')
 
 
@@ -83,37 +92,26 @@ def register_view(request):
 @login_required
 def profile_view(request, username):
     owner = get_object_or_404(User, username=username)
-
-    try:
-        relationship = Relationship.objects.get(
-            owner=owner,
-            target_user=request.user
-        )
-        rel_type = relationship.relationship_type
-    except Relationship.DoesNotExist:
-        rel_type = None
-    
-    # Owner identities
     identities = IdentityProfile.objects.filter(owner=owner)
 
-    visible_data = []
-    for identity in identities:
-        disclosed_fields = DisclosureRule.objects.filter(
-            identity=identity,
-            relationship_type=rel_type,
-            is_visible=True
-        ).values_list('field_name', flat=True)
-
-        filtered_identity = {}
-        for field in disclosed_fields:
-            filtered_identity[field] = getattr(identity, field)
-        visible_data.append(filtered_identity)
+    if owner == request.user:
+        visible_data =[
+            {f:getattr(identity,field) for field, _ in DisclosureRule.FIELD_CHOICES} for identity in identities
+        ]
+    else:
+        viewer_contexts = get_effective_contexts(owner, request.user)
+        visible_data = []
+        for identity in identities:
+            fields = get_visible_fields(identity, viewer_contexts)
+            if fields:
+                visible_data.append({f: getattr(identity, f) for f in fields})
     return render(
-        request, 
-        'profile.html', 
+        request,
+        'profile.html',
         {
             'owner': owner,
-            'relationship_type': rel_type,
-            'visible_data':visible_data
+            'visible_data': visible_data
         }
     )
+    
+

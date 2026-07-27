@@ -38,6 +38,13 @@ class IdentityProfileSerializer(serializers.ModelSerializer):
         fields = ['id', 'identity_name', 'description', 'context', 'context_name', 'created_at']
         read_only_fields = ['id', 'created_at'] ## context is writable so owners can reassign which context each identity belongs to
         ## context_name is read-only, just for convenience.
+    
+    ##validate owner of context when creating identity, otherwise a user can assign their identity to someone else's context, which is not allowed.
+    def validate_context(self, value):
+        request = self.context.get('request')
+        if request and value.owner != request.user:
+            raise serializers.ValidationError("You can only assign your own contexts to your identities.")
+        return value
 
 ##Serializes the relationship model 
 ## handles converting Relationship instances to and from JSON, including the target user's username and the contexts associated with the relationship.
