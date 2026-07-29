@@ -19,7 +19,7 @@ class Command(BaseCommand):
         charlie, _ = User.objects.get_or_create(username='Charlie', defaults={'email': 'charlie@example.com'})
         charlie.set_password('testpass123')
         charlie.save()
-
+        
         public_ctx, _ = Context.objects.get_or_create(owner=john, name='Public', defaults={'is_public_default': True})
         work_ctx, _ = Context.objects.get_or_create(owner=john, name='Work')
         personal_ctx, _ = Context.objects.get_or_create(owner=john, name='Personal')

@@ -14,6 +14,7 @@ from .serializers import (
     RelationshipSerializer,
     DisclosureRuleSerializer, 
     ContextSerializer,
+    UserSearchSerializer,
     VisibleIdentitySerializer
 )
 from .disclosure import get_effective_contexts, get_visible_fields
@@ -171,3 +172,16 @@ class ProfileAPIView(APIView):
 
         serializer = VisibleIdentitySerializer(visible_data, many=True)
         return Response({'owner': owner.username, 'visible_identities':serializer.data})
+
+
+class UserSearchAPIView(generics.ListAPIView):
+    """
+    GET /api/users/?search=<query> -- lists other users by username.
+    No search param returns everyone (mirror the dashboard's show all user MVP behavior)."""
+    serializer_class = UserSearchSerializer
+    def get_queryset(self):
+        queryset = User.objects.exclude(id=self.request.user.id)
+        search = self.request.query_params.get('search')
+        if search:
+            queryset = queryset.filter(username__icontains=search)
+        return queryset.order_by('username')

@@ -118,4 +118,10 @@ class VisibleIdentitySerializer(serializers.Serializer):
     context_name = serializers.CharField()
     visible_fields = serializers.DictField()
 
+## used for searching users by username, returns id and username of matching users
+class UserSearchSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['id', 'username']
+
 ## Other serializers later (Steam , LinkedIn)
