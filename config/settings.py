@@ -13,6 +13,7 @@ import os
 from dotenv import load_dotenv
 from pathlib import Path
 from pathlib import Path
+from datetime import timedelta
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -35,7 +36,7 @@ ALLOWED_HOSTS = []
 
 INSTALLED_APPS = [
     "rest_framework",
-    "rest_framework.authtoken",
+    "django_rest_passwordreset",
     "identities",
     "django.contrib.admin",
     "django.contrib.auth",
@@ -45,14 +46,34 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
 ]
 
+# Token expiry (hours)
+DJANGO_REST_MULTITOKENAUTH_RESET_TOKEN_EXPIRY_TIME = 24
+
+# Prevent email enumeration - always returns 20-0 even if email doesnt exist.
+DJANGO_REST_PASSWORDRESET_NO_INFORMATION_LEAKAGE = True
+
+EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+DEFAULT_FROM_EMAIL = "edrik2001@gmail.com"
+
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
-        'rest_framework.authentication.TokenAuthentication',
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
     ],
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
     ],
+
+    'DEFAULT_THROTTLE_RATES': {
+        "django-rest-passwordreset-request-token": "5/hour",  # Limit password reset requests to 5 per hour per user
+    },
 }
+
+# SIMPLE_JWT = {
+#     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=15),
+#     'REFRESH_TOKEN_LIFETIME': timedelta(days=17),
+#     'ROTATE_REFRESH_TOKENS': True,
+#     'BLACKLIST_AFTER_ROTATION': True,
+# }
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",

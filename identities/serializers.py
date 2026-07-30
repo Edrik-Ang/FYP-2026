@@ -124,4 +124,6 @@ class UserSearchSerializer(serializers.ModelSerializer):
         model = User
         fields = ['id', 'username']
 
+
+
 ## Other serializers later (Steam , LinkedIn)

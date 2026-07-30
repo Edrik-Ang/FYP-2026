@@ -17,10 +17,17 @@ from .serializers import (
     UserSearchSerializer,
     VisibleIdentitySerializer
 )
+from django.contrib.auth.tokens import default_token_generator
+from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+from django.utils.encoding import force_bytes, force_str
+from django.core.mail import send_mail
+from django.conf import settings
+from .tokens import email_verification_token
 from .disclosure import get_effective_contexts, get_visible_fields
 
 User = get_user_model()
 
+### Authentication views for API endpoints
 ## RegisterAPIView handles user registration, returns auth token and username on successful registration.
 ## uses RegisterSerializer to validate and create new users, and generates an auth token for the newly created user.
 class RegisterAPIView(generics.CreateAPIView):

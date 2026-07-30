@@ -6,7 +6,9 @@ admin.site.register(Relationship)
 admin.site.register(DisclosureRule)
 admin.site.register(Context)
 admin.site.register(RelationshipContext)
-##username: edrikang
+
+## Django admin creds for testing:
+##username: edrik
 ##password: !@#$4321
 ## Users: John 
 # password: Password!1

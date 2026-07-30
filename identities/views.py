@@ -113,5 +113,8 @@ def profile_view(request, username):
             'visible_data': visible_data
         }
     )
-    
+
+## Password_reset_confirm_view function handles the view 
+def password_reset_confirm_view():
+    awds
 
