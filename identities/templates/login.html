@@ -6,10 +6,8 @@
     <body>
     <h1> Login to your account </h1>
     <h2> Please enter your credentials </h2>
-    {% if error %}
-    <p style="color:red;">
-        {{ error }}
-    </p>
+    {% if form.errors %}
+    <p style="color:red;">Invalid username or password.</p>
     {% endif %}
     <form method="post">
         {% csrf_token %}
@@ -30,6 +28,9 @@
                 required>
         </p>
             <button type="submit">Login</button>
+            <a href="{% url 'password_reset' %}">Forgot Password?</a>
         </form>
+
+        
     </body>
 </html>

@@ -65,7 +65,7 @@ class RelationshipContext(models.Model):
 class DisclosureRule(models.Model):
     FIELD_CHOICES = [
         ('identity_name', 'Identity Name'),
-        ('description', 'Description')
+        ('description', 'Description') ## Look into improving this into a better field, maybe dynamic attributes
     ]
     identity = models.ForeignKey(IdentityProfile, on_delete=models.CASCADE,related_name='disclosure_rules') ##Which identity does this disclosure rule belong to
     context = models.ForeignKey(Context, on_delete=models.CASCADE, related_name='disclosure_rules') ##Which context does this disclosure rule belong to

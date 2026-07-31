@@ -1,0 +1,42 @@
+## views.py file contains the view functions for the identities app, including home, dashboard, and profile views.
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth import get_user_model
+from ..disclosure import get_visible_identities, get_effective_contexts
+
+from ..models import IdentityProfile
+
+User = get_user_model()
+
+
+def home_view(request):
+    return render(request, 'home.html')
+
+
+@login_required
+def dashboard_view(request):
+    users = User.objects.exclude(id=request.user.id)
+    identities = IdentityProfile.objects.filter(owner=request.user)
+    return render(request, "dashboard.html", {"users": users, "identities": identities})
+
+
+@login_required
+def profile_redirect_view(request):
+    username = request.GET.get('username')
+    if not username:
+        return redirect("dashboard")
+    return redirect('profile', username=username)
+
+
+@login_required
+def profile_view(request, username):
+    owner = get_object_or_404(User, username=username)
+    visible_data = get_visible_identities(owner, request.user)
+
+    viewer_contexts = None
+    if owner != request.user:
+        viewer_contexts = get_effective_contexts(owner, request.user)
+
+    return render(request, 'profile.html', {'owner': owner, 'visible_data': visible_data, 'viewer_contexts': viewer_contexts})
+
+

@@ -1,6 +1,7 @@
 ## Api_urls.py file is define the API endpoint URL paths for the identities app.
 from django.urls import include, path
 from .api_views import ContextDetailView, ContextListCreateView, RegisterAPIView, LoginAPIView, LogoutAPIView, IdentityListCreateView, IdentityDetailView, RelationshipListCreateView, DisclosureRuleListCreateView, DisclosureRuleDetailView, ProfileAPIView, UserSearchAPIView      
+from rest_framework_simplejwt.views import TokenRefreshView
 
 urlpatterns = [
 
@@ -9,17 +10,23 @@ urlpatterns = [
     path('auth/register/', RegisterAPIView.as_view(), name='api-register'),
     path('auth/login/', LoginAPIView.as_view(), name='api-login'),
     path('auth/logout/', LogoutAPIView.as_view(), name='api-logout'),
+    path('auth/refresh/', TokenRefreshView.as_view(), name='api-token-refresh'),
 
     ## API for password resets (Later do)
-    path('password_reset/', include('django_rest_passwordreset.urls', namespace='password_reset')),
+    path('password_reset/', include('django_rest_passwordreset.urls', namespace='password_reset_api')),
+
 
     ## API for email verification (Later do)
 
     ### APIs for contexts
+    ## /api/contexts/
+
+    ### APIs for identities
+    ## /api/identities/
+    ## /api/identities/{id}/
 
     ### APIs for relationships
-
-    ### APIs for disclosure rules
+    ## /api/relationships/
 
 
 

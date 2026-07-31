@@ -4,44 +4,31 @@
         <title>Profile Page</title>
     </head>
     <body>
-        <h1> {{ owner.username }}'s Profile </h1>
+        <h1>{{ owner.username }}'s Profile</h1>
 
+        {% if owner == request.user %}
+            <p>This is your own profile.</p>
+        {% elif viewer_contexts %}
+            <p>You are viewing this profile as:
+                <strong>{% for ctx in viewer_contexts %}{{ ctx.name }}{% if not forloop.last %}, {% endif %}{% endfor %}</strong>
+            </p>
+        {% endif %}
 
-                {% if relationship_type %}
-                <p> You are viewing this profile as:  
-                    <strong>
-                    {{ relationship_type }} 
-                    </strong>  
-                </p>
-                {% else %}
-                    <p> You do not have a relationship with this user. 
-                        No profile information is available.
-                    </p>
-                    No specific relationship
-                {% endif %}
-
-
-        <h2> Visible Information </h2>
+        <h2>Visible Information</h2>
         {% for identity in visible_data %}
             <div>
-                {% if identity.identity_name %}
-                    <p><strong>Identity:</strong> {{ identity.identity_name }}</p>
-                {% endif %}
-                {% if identity.display_name %}
-                    <p><strong>Display Name:</strong> {{ identity.display_name }}</p>
-                {% endif %}
-                {% if identity.description %}
-                    <p><strong>Description:</strong> {{ identity.description }}</p>
-                {% endif %}
+                <p><strong>Context:</strong> {{ identity.context_name }}</p>
+                {% for field, value in identity.visible_fields.items %}
+                    <p><strong>{{ field }}:</strong> {{ value }}</p>
+                {% endfor %}
                 <hr>
             </div>
         {% empty %}
-            <p>
-                No information is visible to you based on your relationship with this user.
-            </p>
+            <p>No information is visible to you based on your relationship with this user.</p>
         {% endfor %}
+
         <p>
-            <a href="{% url 'dashboard' %}"> Back to dashboard</a>
+            <a href="{% url 'dashboard' %}">Back to dashboard</a>
         </p>
     </body>
 </html>

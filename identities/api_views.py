@@ -17,19 +17,14 @@ from .serializers import (
     UserSearchSerializer,
     VisibleIdentitySerializer
 )
-from django.contrib.auth.tokens import default_token_generator
-from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
-from django.utils.encoding import force_bytes, force_str
-from django.core.mail import send_mail
-from django.conf import settings
-from .tokens import email_verification_token
-from .disclosure import get_effective_contexts, get_visible_fields
+from .disclosure import get_visible_identities
+from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.exceptions import TokenError
+
 
 User = get_user_model()
 
-### Authentication views for API endpoints
-## RegisterAPIView handles user registration, returns auth token and username on successful registration.
-## uses RegisterSerializer to validate and create new users, and generates an auth token for the newly created user.
+
 class RegisterAPIView(generics.CreateAPIView):
     """POST /api/register/ - create a new user (+ default public context), returns an auth token.
     """
@@ -42,26 +37,13 @@ class RegisterAPIView(generics.CreateAPIView):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True) 
         user = serializer.save()
-        token, _ = Token.objects.get_or_create(user=user)
-        return Response({'username': user.username, 'token': token.key}, status=status.HTTP_201_CREATED)     
+        refresh = RefreshToken.for_user(user)
+        return Response({
+            'username': user.username,
+            'access': str(refresh.access_token),
+            'refresh': str(refresh),
+        }, status=status.HTTP_201_CREATED)
 
-    # def post(self, request):
-    #     serializer = RegisterSerializer(data=request.data)
-    #     if serializer.is_valid():
-    #         user = serializer.save()
-    #         token, _ = Token.objects.get_or_create(user=user)
-    #         return Response(
-    #             {
-    #                 'token': token.key, 
-    #                 'username': user.username,
-    #             },
-    #             status=status.HTTP_201_CREATED
-    #         )
-    #     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    ##Include OIDC login and registration endpoints for third-party authentication providers. 
-    # This will allow users to log in or register using their existing accounts from providers like Google, Facebook, or GitHub.
-
-    
 ## LoginAPIView class handles user login, returns auth token and username on successful authentication.
 # Uses the authenticate method to verify user credentials and generates an auth token for the authenticated user. 
 class LoginAPIView(APIView):
@@ -74,16 +56,27 @@ class LoginAPIView(APIView):
         user = authenticate(request, username=username, password=password)
         if user is None:
             return Response({'error': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
-        token, _ = Token.objects.get_or_create(user=user)
-        return Response({'username':user.username,'token': token.key})
+        refresh = RefreshToken.for_user(user)
+
+        return Response({
+            'username':user.username,
+            'access': str(refresh.access_token), 
+            'refresh': str(refresh)
+        })
 
 
 ## LogoutAPIView class handles user logouts, delete the auth token for authenticated users.
 # This ensures that the user is logged out and cannot use the token for further authentication.        
 class LogoutAPIView(APIView):
     def post(self, request):
-        request.user.auth_token.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        refresh_token = request.data.get('refresh')
+        if not refresh_token:
+            return Response({'error': 'Refresh token is required'}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            RefreshToken(refresh_token).blacklist()
+        except TokenError:
+            return Response({'error': 'Invalid or expired refresh token'}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(status=status.HTTP_205_RESET_CONTENT)
 
 ## ContextListCreateView class allows users to list and create contexts
 # Uses context serializer to serialize the data and requires the user to be authenticated.
@@ -156,29 +149,9 @@ class DisclosureRuleDetailView(generics.RetrieveUpdateDestroyAPIView):
 class ProfileAPIView(APIView):
     def get(self, request, username):
         owner = get_object_or_404(User, username=username)
-        identities = IdentityProfile.objects.filter(owner=owner)
-        
-        if owner == request.user:
-            visible_data = [
-                {
-                    'identity_id': i.id, 'context_name': i.context.name,
-                    'visible_fields':{
-                        f:getattr(i,f) for f, _ in DisclosureRule.FIELD_CHOICES},
-                } for i in identities
-            ]
-        else:
-            viewer_contexts = get_effective_contexts(owner, request.user)
-            visible_data = []
-            for identity in identities:
-                fields = get_visible_fields(identity, viewer_contexts)
-                if fields:
-                    visible_data.append({
-                        'identity_id': identity.id, 'context_name': identity.context.name,
-                        'visible_fields': {f: getattr(identity, f) for f in fields},
-                    })
-
+        visible_data = get_visible_identities(owner, request.user)
         serializer = VisibleIdentitySerializer(visible_data, many=True)
-        return Response({'owner': owner.username, 'visible_identities':serializer.data})
+        return Response({'owner': owner.username, 'visible_identities': serializer.data})
 
 
 class UserSearchAPIView(generics.ListAPIView):

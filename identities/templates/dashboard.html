@@ -10,7 +10,7 @@
     {% for identity in identities %}
         <p>
             <strong>{{identity.identity_name}}</strong><br>
-            Display Name: {{identity.display_name}}<br>
+            Display Name: {{identity.context.name}}<br>
             Description: {{identity.description}}<br>
         </p>
     {% empty %}

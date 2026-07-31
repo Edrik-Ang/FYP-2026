@@ -5,7 +5,7 @@
 ## get_effective_contexts function used for filtering contexts tags for a given owner and viewer.
 ## Takes in owner and viewer as params, returns None if owner and viewer are the same, 
 ## else returns a list of contexts that apply when viewer looks at owner's profile.
-from .models import Context, Relationship, DisclosureRule
+from .models import Context, Relationship, DisclosureRule, IdentityProfile
 
 def get_effective_contexts(owner, viewer):
     """
@@ -41,3 +41,37 @@ def get_visible_fields(identity, viewer_contexts):
             identity=identity, context__in=viewer_contexts, is_visible=True
         ).values_list('field_name', flat=True)
     )
+
+# get_visible_identities function used for getting visible identities based on owner and viewer
+def get_visible_identities(owner, viewer):
+    identities = IdentityProfile.objects.filter(owner=owner)
+
+    if owner == viewer:
+        return [
+            {
+                'identity_id': identity.id,
+                'context_name': identity.context.name,
+                'visible_fields': {f: getattr(identity, f) for f, _ in DisclosureRule.FIELD_CHOICES},
+            }
+            for identity in identities
+        ]
+
+    viewer_contexts = get_effective_contexts(owner, viewer)
+    visible_data = []
+    for identity in identities:
+        fields = get_visible_fields(identity, viewer_contexts)
+        if fields:
+            visible_data.append({
+                'identity_id': identity.id,
+                'context_name': identity.context.name,
+                'visible_fields': {f: getattr(identity, f) for f in fields},
+            })
+    return visible_data
+
+## get visible attributes
+
+## build public profile 
+
+## can_view_attrributes
+
+##can_edit_profile
