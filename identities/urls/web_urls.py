@@ -2,17 +2,20 @@
 ## handles the template routing of urls for the to the correct views
 from django.contrib.auth import views as django_auth_views 
 from django.urls import path
-from .views.auth_views import WebLoginView, WebLogoutView, register_view 
-from .views import views
+from ..views import (
+    home_view, dashboard_view, profile_view, profile_redirect_view,
+    WebLoginView, WebLogoutView, register_view,
+)
 
 urlpatterns = [
-    path("", views.home_view, name="home"),
-    path("login/", WebLoginView.as_view(), name="login"),
-    path("register/", register_view, name="register"),
-    path("logout/", WebLogoutView.as_view(), name="logout"),
-    path("dashboard/", views.dashboard_view, name="dashboard"),
-    path("profile-search/", views.profile_redirect_view, name="profile_redirect"),
-    path("profile/<str:username>/", views.profile_view, name="profile"),
+    path('', home_view, name='home'),
+    path('dashboard/', dashboard_view, name='dashboard'),
+    path('profile/', profile_redirect_view, name='profile-redirect'),
+    path('profile/<str:username>/', profile_view, name='profile'),
+
+    path('login/', WebLoginView.as_view(), name='login'),
+    path('logout/', WebLogoutView.as_view(), name='logout'),
+    path('register/', register_view, name='register'),
 
     # Web-facing password reset )
     path('password-reset/', django_auth_views.PasswordResetView.as_view(template_name='registration/password_reset_form.html'), name='password_reset'),

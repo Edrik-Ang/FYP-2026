@@ -10,14 +10,14 @@ User = get_user_model()
 
 
 def home_view(request):
-    return render(request, 'home.html')
+    return render(request, 'identities/home.html')
 
 
 @login_required
 def dashboard_view(request):
     users = User.objects.exclude(id=request.user.id)
     identities = IdentityProfile.objects.filter(owner=request.user)
-    return render(request, "dashboard.html", {"users": users, "identities": identities})
+    return render(request, "identities/dashboard.html", {"users": users, "identities": identities})
 
 
 @login_required
@@ -37,6 +37,6 @@ def profile_view(request, username):
     if owner != request.user:
         viewer_contexts = get_effective_contexts(owner, request.user)
 
-    return render(request, 'profile.html', {'owner': owner, 'visible_data': visible_data, 'viewer_contexts': viewer_contexts})
+    return render(request, 'identities/profile.html', {'owner': owner, 'visible_data': visible_data, 'viewer_contexts': viewer_contexts})
 
 

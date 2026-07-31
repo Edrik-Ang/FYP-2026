@@ -6,7 +6,7 @@ from django.urls import reverse_lazy
 from ..serializers import RegisterSerializer
 
 class WebLoginView(LoginView):
-    template_name = 'login.html'
+    template_name = 'identities/login.html'
     redirect_authenticated_user = True
 
 
@@ -21,8 +21,8 @@ def register_view(request):
             user = serializer.save()
             login(request, user) ## uses Django's built in login function to log user in after registration
             return redirect('dashboard')
-        return render(request, 'register.html', {'errors': serializer.errors})
-    return render(request, 'register.html')
+        return render(request, 'identities/register.html', {'errors': serializer.errors})
+    return render(request, 'identities/register.html')
 
 # def login_view(request):
 #     if request.method == 'POST':
