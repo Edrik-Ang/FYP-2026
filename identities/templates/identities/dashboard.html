@@ -1,40 +1,121 @@
 <!DOCTYPE html>
 <html lang="en">
- <head>
-    <title>Dashboard Page</title>
- </head>   
+<head>
+    <title>Dashboard</title>
+</head>
 
- <body>
-    <h1> Dashboard Page, welcome {{ request.user.username }}! </h1>
-    <h2> Your identities </h2>
-    {% for identity in identities %}
-        <p>
-            <strong>{{identity.identity_name}}</strong><br>
-            Display Name: {{identity.context.name}}<br>
-            Description: {{identity.description}}<br>
-        </p>
-    {% empty %}
-        <p>
-            You have not created any identities yet.
-        </p>
-    {% endfor %}
+<body>
 
-    <h2>View another User's Profile</h2>
-    <form method="GET" action="{% url 'profile-redirect' %}">
-        <select name="username" required>
-            <option value="">Select a user</option>
-        
-            {% for user in users %}
-                <option value="{{user.username}}">
-                    {{user.username}}
-                </option>
-            {% endfor %}
-        </select>
-        <button type="submit">View Profile</button>
-    </form>
-    <form method="post" action="{% url 'logout' %}">
-        {% csrf_token %}
-        <button type="submit">Logout</button>
-    </form>
- </body>
+<h1>Welcome, {{ me.username }}!</h1>
+
+<hr>
+
+<h2>Statistics</h2>
+
+<ul>
+    <li>Total Identities: {{ stats.identity_count }}</li>
+    <li>Total Relationships: {{ stats.relationship_count }}</li>
+    <li>Total Contexts: {{ stats.context_count }}</li>
+</ul>
+
+<hr>
+
+<h2>Your Identities</h2>
+
+{% for identity in identities %}
+    <div style="border:1px solid black; padding:10px; margin-bottom:10px;">
+
+        <strong>{{ identity.identity_name }}</strong><br>
+
+        Context:
+        {{ identity.context.name }}
+
+        <br>
+
+        Description:
+        {{ identity.description }}
+
+    </div>
+
+{% empty %}
+
+    <p>No identities created yet.</p>
+
+{% endfor %}
+
+<hr>
+
+<h2>Your Relationships</h2>
+
+{% for relationship in relationships %}
+
+    <div style="margin-bottom:15px;">
+
+        <strong>{{ relationship.target_user.username }}</strong>
+
+        <br>
+
+        Context Tags:
+
+        <ul>
+
+        {% for context in relationship.contexts.all %}
+
+            <li>{{ context.name }}</li>
+
+        {% empty %}
+
+            <li>No tags</li>
+
+        {% endfor %}
+
+        </ul>
+
+    </div>
+
+{% empty %}
+
+    <p>You have no relationships.</p>
+
+{% endfor %}
+
+<hr>
+
+<h2>Browse Users</h2>
+
+<form method="GET" action="{% url 'profile-redirect' %}">
+
+    <select name="username" required>
+
+        <option value="">Select a user</option>
+
+        {% for user in users %}
+
+            <option value="{{ user.username }}">
+                {{ user.username }}
+            </option>
+
+        {% endfor %}
+
+    </select>
+
+    <button type="submit">
+        View Profile
+    </button>
+
+</form>
+
+<hr>
+
+<form method="post" action="{% url 'logout' %}">
+
+    {% csrf_token %}
+
+    <button type="submit">
+        Logout
+    </button>
+
+</form>
+
+</body>
 </html>

@@ -2,9 +2,9 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import get_user_model
-from ..disclosure import get_visible_identities, get_effective_contexts
 
-from ..models import IdentityProfile
+from identities.services.dashboard_service import DashboardService
+from ..disclosure import get_visible_identities, get_effective_contexts
 
 User = get_user_model()
 
@@ -15,9 +15,9 @@ def home_view(request):
 
 @login_required
 def dashboard_view(request):
-    users = User.objects.exclude(id=request.user.id)
-    identities = IdentityProfile.objects.filter(owner=request.user)
-    return render(request, "identities/dashboard.html", {"users": users, "identities": identities})
+    dashboard = DashboardService.get_dashboard(request.user)
+    return render(request, "identities/dashboard.html", dashboard)
+
 
 
 @login_required

@@ -125,5 +125,13 @@ class UserSearchSerializer(serializers.ModelSerializer):
         fields = ['id', 'username']
 
 
+class DashboardSerializer(serializers.Serializer):
+    me = serializers.DictField()
+    identities = IdentityProfileSerializer(many=True)
+    users = UserSearchSerializer(many=True)
+    stats = serializers.DictField()
+    
+
+
 
 ## Other serializers later (Steam , LinkedIn)

@@ -7,8 +7,9 @@ from ..api import (
     IdentityListCreateView, IdentityDetailView,
     RelationshipListCreateView, RelationshipDetailView,
     DisclosureRuleListCreateView, DisclosureRuleDetailView,
-    ProfileAPIView, UserSearchAPIView,
+    ProfileAPIView, UserSearchAPIView, 
 )
+from ..api.dashboard_views import DashBoardAPIView
 
 
 urlpatterns = [
@@ -23,7 +24,8 @@ urlpatterns = [
     ## API for password resets (Later do)
     path('password_reset/', include('django_rest_passwordreset.urls', namespace='password_reset_api')),
 
-
+    ## API Path for dashboard data
+    path('dashboard/', DashBoardAPIView.as_view(), name='dashboard-api'),
 
     ## API for email verification (Later do)
 
