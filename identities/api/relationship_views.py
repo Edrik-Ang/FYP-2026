@@ -15,7 +15,7 @@ class RelationshipListCreateView(generics.ListCreateAPIView):
         serializer.save(owner=self.request.user)
 
 
-class RelationshipDetailView(generics.RetrieveDestroyAPIView):
+class RelationshipDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = RelationshipSerializer
 
     def get_queryset(self):
