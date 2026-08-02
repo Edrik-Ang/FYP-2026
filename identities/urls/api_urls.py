@@ -29,9 +29,6 @@ urlpatterns = [
 
     ## API for email verification (Later do)
 
-    ### APIs for contexts
-    ## /api/contexts/
-
     ### APIs for identities
     ## /api/identities/
     ## /api/identities/{id}/
@@ -65,15 +62,25 @@ urlpatterns = [
 
 
 
-    ### Identity domain
+    ### Context APIs.
     path('contexts/', ContextListCreateView.as_view(), name='context-list-create'),
-    path('contexts/<int:pk>/', ContextDetailView.as_view(), name='context-retrieve-update-destroy'),
+    path('contexts/<int:pk>/', ContextDetailView.as_view(), name='context-detail-retrieve-update-destroy'),
+
+
+    # Identity APIs.
     path('identities/', IdentityListCreateView.as_view(), name='identity-list-create'),
     path('identities/<int:pk>/', IdentityDetailView.as_view(), name='identity-retrieve-update-destroy'),
+
+
+    # Relationship APIs.
     path('relationships/', RelationshipListCreateView.as_view(), name='relationship-list-create'),
     path('relationships/<int:pk>/', RelationshipDetailView.as_view(), name='relationship-retrieve-update-destroy'),
+
+
+    # Disclosure Rule APIs.
     path('disclosure-rules/', DisclosureRuleListCreateView.as_view(), name='disclosure-rule-list-create'),
     path('disclosure-rules/<int:pk>/', DisclosureRuleDetailView.as_view(), name='disclosure-rule-retrieve-update-destroy'),
+
     path('profile/<str:username>/', ProfileAPIView.as_view(), name='profile-api'),
     path('users/', UserSearchAPIView.as_view(), name='user-search-api'),
 

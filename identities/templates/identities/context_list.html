@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Your Contexts</title>
+</head>
+<body>
+    <h1>Your Contexts</h1>
+
+    {% if messages %}
+        <ul>
+        {% for message in messages %}
+            <li{% if message.tags == 'error' %} style="color: red;"{% else %} style="color: green;"{% endif %}>
+                {{ message }}
+            </li>
+        {% endfor %}
+        </ul>
+    {% endif %}
+
+    <p><a href="{% url 'context-create' %}">+ Add new context</a></p>
+
+{% for context in contexts %}
+    <div style="border:1px solid black; padding:10px; margin-bottom:10px;">
+        <strong>{{ context.name }}</strong>
+        {% if context.is_public_default %}
+            <em>(default public — cannot be renamed or deleted)</em>
+        {% else %}
+            <br>
+            <a href="{% url 'context-edit' context.pk %}">Edit</a>
+            <form method="post" action="{% url 'context-delete' context.pk %}" style="display:inline;">
+                {% csrf_token %}
+                <button type="submit">Delete</button>
+            </form>
+        {% endif %}
+    </div>
+{% empty %}
+    <p>You have no contexts yet.</p>
+{% endfor %}
+
+    <p><a href="{% url 'dashboard' %}">Back to dashboard</a></p>
+</body>
+</html>

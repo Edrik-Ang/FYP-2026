@@ -23,10 +23,25 @@ class RegisterSerializer(serializers.ModelSerializer):
 
 ##Serializer for Context model, handles converting Context instances to and from JSON
 class ContextSerializer(serializers.ModelSerializer):
+
+
     class Meta:
         model = Context
         fields = ['id', 'name', 'is_public_default', 'created_at']
         read_only_fields = ['id', 'is_public_default', 'created_at']
+
+        def validate_name(self, value):
+            request = self.context['request']
+            exists = Context.objects.filter(owner=request.user, name=value)
+
+            if self.instance:
+                exists = exists.exclude(pk=self.instance.pk)
+
+            if exists.exists():
+                raise serializers.ValidationError("You already have a context with this name.")
+            
+            return value
+
 
 ## Serializer for IdentityProfile model, handles converting IdentityProfile instances to and from JSON
 ## Includes context_name field for convenience, which is read-only and derived from the related Context model.
@@ -93,6 +108,8 @@ class RelationshipSerializer(serializers.ModelSerializer):
 ## Serializer for DisclosureRule model, handles converting DisclosureRule instances to and from JSON
 ## handles validation to ensure that users can only create disclosure rules for their own identities and contexts, preventing unauthorized access or modifications.
 class DisclosureRuleSerializer(serializers.ModelSerializer):
+
+
     class Meta:
         model = DisclosureRule
         fields = ['id', 'identity', 'context', 'field_name','is_visible', 'created_at']

@@ -17,7 +17,7 @@
     <li>Total Relationships: {{ stats.relationship_count }}</li>
     <li>Total Contexts: {{ stats.context_count }}</li>
 </ul>
-
+<p><a href="{% url 'context-list' %}">Manage your contexts</a></p>
 <hr>
 
 <h2>Your Identities</h2>
@@ -78,6 +78,27 @@
     <p>You have no relationships.</p>
 
 {% endfor %}
+<hr>
+
+<h2>Your Contexts</h2>
+
+<ul>
+
+{% for context in contexts %}
+
+    <li>
+
+        {{ context.name }}
+
+        {% if context.is_public_default %}
+            (Default Public Context)
+        {% endif %}
+
+    </li>
+
+{% endfor %}
+
+</ul>
 
 <hr>
 

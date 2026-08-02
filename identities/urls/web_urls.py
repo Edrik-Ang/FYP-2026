@@ -2,6 +2,8 @@
 ## handles the template routing of urls for the to the correct views
 from django.contrib.auth import views as django_auth_views 
 from django.urls import path
+
+from identities.views.context_views import context_create_view, context_delete_view, context_edit_view, context_list_view
 from ..views import (
     home_view, dashboard_view, profile_view, profile_redirect_view,
     WebLoginView, WebLogoutView, register_view,
@@ -22,4 +24,10 @@ urlpatterns = [
     path('password-reset/done/', django_auth_views.PasswordResetDoneView.as_view(template_name='registration/password_reset_done.html'), name='password_reset_done'),
     path('reset/<uidb64>/<token>/', django_auth_views.PasswordResetConfirmView.as_view(template_name='registration/password_reset_confirm.html'), name='password_reset_confirm'),
     path('reset/done/', django_auth_views.PasswordResetCompleteView.as_view(template_name='registration/password_reset_complete.html'), name='password_reset_complete'),
+
+    ## contexts urls
+    path('contexts/', context_list_view, name='context-list'),
+    path('contexts/new/', context_create_view, name='context-create'),
+    path('contexts/<int:pk>/edit/', context_edit_view, name='context-edit'),
+    path('contexts/<int:pk>/delete/', context_delete_view, name='context-delete'),  
 ]

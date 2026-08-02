@@ -10,11 +10,13 @@ class DashboardService:
         identities = IdentityProfile.objects.filter(owner=user)
         users = User.objects.exclude(id=user.id).order_by('username')
         relationships = Relationship.objects.filter(owner=user).select_related('target_user').prefetch_related("contexts")
+        contexts = Context.objects.filter(owner=user)
         return {
             "me": {"id": user.id, "username": user.username},
             "identities": identities,
             "users": users,
             "relationships": relationships,
+            "contexts": contexts,
             "stats": {
                 "identity_count": identities.count(),
                 "relationship_count": relationships.count(),

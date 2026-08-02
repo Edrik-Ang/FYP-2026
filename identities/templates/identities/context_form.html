@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>{% if context %}Edit{% else %}New{% endif %} Context</title>
+</head>
+<body>
+    <h1>{% if context %}Edit Context{% else %}New Context{% endif %}</h1>
+
+    {% if errors %}
+        <ul style="color: red;">
+        {% for field, field_errors in errors.items %}
+            {% for error in field_errors %}
+                <li>{{ field }}: {{ error }}</li>
+            {% endfor %}
+        {% endfor %}
+        </ul>
+    {% endif %}
+
+    <form method="post">
+        {% csrf_token %}
+        <label>
+            Name:
+            <input type="text" name="name" value="{{ context.name|default:'' }}" required>
+        </label>
+        <button type="submit">Save</button>
+    </form>
+
+    <p><a href="{% url 'context-list' %}">Cancel</a></p>
+</body>
+</html>
