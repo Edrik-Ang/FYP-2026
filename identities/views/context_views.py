@@ -38,7 +38,7 @@ def context_list_view(request):
 def context_create_view(request):
     errors = None
     if request.method == 'POST':
-        serializer = ContextSerializer(data=request.POST)
+        serializer = ContextSerializer(data=request.POST, context={'request': request})
         if serializer.is_valid():
             try:
                 ContextService.create_context(request.user, serializer)
@@ -55,7 +55,7 @@ def context_edit_view(request, pk):
     context = get_object_or_404(Context, pk=pk, owner=request.user)
     errors = None
     if request.method == 'POST':
-        serializer = ContextSerializer(context, data=request.POST, partial=True)
+        serializer = ContextSerializer(context, data=request.POST, partial=True, context={'request': request})
         if serializer.is_valid():
             try:
                 ContextService.update_context(context, serializer)

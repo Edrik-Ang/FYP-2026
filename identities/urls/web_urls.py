@@ -4,6 +4,7 @@ from django.contrib.auth import views as django_auth_views
 from django.urls import path
 
 from identities.views.context_views import context_create_view, context_delete_view, context_edit_view, context_list_view
+from identities.views.identity_views import identity_create_view, identity_delete_view, identity_edit_view, identity_list_view
 from ..views import (
     home_view, dashboard_view, profile_view, profile_redirect_view,
     WebLoginView, WebLogoutView, register_view,
@@ -30,4 +31,10 @@ urlpatterns = [
     path('contexts/new/', context_create_view, name='context-create'),
     path('contexts/<int:pk>/edit/', context_edit_view, name='context-edit'),
     path('contexts/<int:pk>/delete/', context_delete_view, name='context-delete'),  
+
+    ## identity urls
+    path('identities/', identity_list_view, name='identity-list'),
+    path('identities/new/', identity_create_view, name='identity-create'),
+    path('identities/<int:pk>/edit/', identity_edit_view, name='identity-edit'),
+    path('identities/<int:pk>/delete/', identity_delete_view, name='identity-delete'),
 ]

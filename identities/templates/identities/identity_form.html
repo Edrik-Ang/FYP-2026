@@ -1,0 +1,45 @@
+<!-- identity_form.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>{% if identity %}Edit{% else %}New{% endif %} Identity</title>
+</head>
+<body>
+    <h1>{% if identity %}Edit Identity{% else %}New Identity{% endif %}</h1>
+
+    {% if errors %}
+        <ul style="color: red;">
+        {% for field, field_errors in errors.items %}
+            {% for error in field_errors %}
+                <li>{{ field }}: {{ error }}</li>
+            {% endfor %}
+        {% endfor %}
+        </ul>
+    {% endif %}
+
+    <form method="post">
+        {% csrf_token %}
+        <label>
+            Identity name:
+            <input type="text" name="identity_name" value="{{ identity.identity_name|default:'' }}" required>
+        </label><br>
+        <label>
+            Context:
+            <select name="context" required>
+                {% for context in contexts %}
+                    <option value="{{ context.pk }}" {% if identity.context_id == context.pk %}selected{% endif %}>
+                        {{ context.name }}
+                    </option>
+                {% endfor %}
+            </select>
+        </label><br>
+        <label>
+            Description:
+            <textarea name="description">{{ identity.description|default:'' }}</textarea>
+        </label><br>
+        <button type="submit">Save</button>
+    </form>
+
+    <p><a href="{% url 'identity-list' %}">Cancel</a></p>
+</body>
+</html>

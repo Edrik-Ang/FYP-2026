@@ -30,17 +30,17 @@ class ContextSerializer(serializers.ModelSerializer):
         fields = ['id', 'name', 'is_public_default', 'created_at']
         read_only_fields = ['id', 'is_public_default', 'created_at']
 
-        def validate_name(self, value):
-            request = self.context['request']
-            exists = Context.objects.filter(owner=request.user, name=value)
+    def validate_name(self, value):
+        request = self.context['request']
+        exists = Context.objects.filter(owner=request.user, name=value)
 
-            if self.instance:
-                exists = exists.exclude(pk=self.instance.pk)
+        if self.instance:
+            exists = exists.exclude(pk=self.instance.pk)
 
-            if exists.exists():
-                raise serializers.ValidationError("You already have a context with this name.")
-            
-            return value
+        if exists.exists():
+            raise serializers.ValidationError("You already have a context with this name.")
+        
+        return value
 
 
 ## Serializer for IdentityProfile model, handles converting IdentityProfile instances to and from JSON
@@ -60,6 +60,20 @@ class IdentityProfileSerializer(serializers.ModelSerializer):
         if request and value.owner != request.user:
             raise serializers.ValidationError("You can only assign your own contexts to your identities.")
         return value
+
+    ## Validation logic ensure user cannot have many identities with same name in same context, but can have same identity_name in different contexts.
+    def validate(self, attrs):
+        request = self.context['request']
+        context = attrs.get("context", getattr(self.instance, "context", None))
+        identity_name = attrs.get("identity_name", getattr(self.instance, "identity_name", None))
+        exists = IdentityProfile.objects.filter(owner=request.user, context=context, identity_name=identity_name)
+        if self.instance:
+            exists = exists.exclude(pk=self.instance.pk)
+
+        if exists.exists():
+            raise serializers.ValidationError("You already have an identity with this name in this context.")
+
+        return attrs
 
 ##Serializes the relationship model 
 ## handles converting Relationship instances to and from JSON, including the target user's username and the contexts associated with the relationship.
