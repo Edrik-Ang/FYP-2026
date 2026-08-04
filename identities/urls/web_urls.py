@@ -5,7 +5,7 @@ from django.urls import path
 
 from identities.views.context_views import context_create_view, context_delete_view, context_edit_view, context_list_view
 from identities.views.disclosure_views import disclosure_rule_create_view, disclosure_rule_delete_view, disclosure_rule_edit_view, disclosure_rule_list_view
-from identities.views.identity_views import identity_create_view, identity_delete_view, identity_edit_view, identity_list_view
+from identities.views.identity_views import identity_create_view, identity_delete_view, identity_edit_view, identity_list_view, public_profile_view
 from identities.views.relationship_views import relationship_create_view, relationship_delete_view, relationship_delete_view, relationship_edit_view, relationship_list_view, relationship_preview_view
 from ..views import (
     home_view, dashboard_view, profile_view, profile_redirect_view,
@@ -39,6 +39,8 @@ urlpatterns = [
     path('identities/new/', identity_create_view, name='identity-create'),
     path('identities/<int:pk>/edit/', identity_edit_view, name='identity-edit'),
     path('identities/<int:pk>/delete/', identity_delete_view, name='identity-delete'),
+    ## public profile view for identities
+    path('identities/public/', public_profile_view, name='public-profile'),
 
     #relationship urls
     path('relationships/', relationship_list_view, name='relationship-list'),

@@ -27,7 +27,8 @@
             Context:
             <select name="context" required>
                 {% for context in contexts %}
-                    <option value="{{ context.pk }}" {% if identity.context_id == context.pk %}selected{% endif %}>
+                    <option value="{{ context.pk }}" 
+                        {% if identity.context_id == context.pk or preselected_context_id == context.pk %}selected{% endif %}>
                         {{ context.name }}
                     </option>
                 {% endfor %}

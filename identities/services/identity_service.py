@@ -37,3 +37,9 @@ class IdentityService:
         Delete an existing identity.
         """
         identity.delete()
+
+    @staticmethod
+    def get_public_identity(user):
+        """ Retrieve user's public identity under their own default public context. If any. Ordered by id so repeated calls are deterministic even if user has multiple public identities."""
+        return IdentityProfile.objects.filter(owner=user, context__is_public_default=True).select_related('context').order_by('id').first()
+    
