@@ -1,0 +1,51 @@
+<!-- relationship_form.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head><title>{% if relationship %}Edit{% else %}New{% endif %} Relationship</title></head>
+<body>
+    <h1>{% if relationship %}Edit Relationship: {{ relationship.target_user.username }}{% else %}New Relationship{% endif %}</h1>
+
+    {% if errors %}
+        <ul style="color: red;">
+        {% for field, field_errors in errors.items %}
+            {% for error in field_errors %}<li>{{ field }}: {{ error }}</li>{% endfor %}
+        {% endfor %}
+        </ul>
+    {% endif %}
+
+    <form method="post">
+        {% csrf_token %}
+
+        {% if relationship %}
+            <p>With: <strong>{{ relationship.target_user.username }}</strong></p>
+        {% else %}
+            <label>
+                Relationship with:
+                <select name="target_user" required>
+                    <option value="">Select a user</option>
+                    {% for user in users %}
+                        <option value="{{ user.pk }}">{{ user.username }}</option>
+                    {% endfor %}
+                </select>
+            </label><br>
+        {% endif %}
+
+        <fieldset>
+            <legend>Context tags</legend>
+            {% for context in contexts %}
+                <label>
+                    <input type="checkbox" name="contexts" value="{{ context.pk }}"
+                        {% if context.pk in current_context_ids %}checked{% endif %}>
+                    {{ context.name }}
+                </label><br>
+            {% empty %}
+                <p>You have no non-public contexts yet — <a href="{% url 'context-create' %}">create one first</a>.</p>
+            {% endfor %}
+        </fieldset>
+
+        <button type="submit">Save</button>
+    </form>
+
+    <p><a href="{% url 'relationship-list' %}">Cancel</a></p>
+</body>
+</html>

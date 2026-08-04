@@ -109,13 +109,26 @@ class RelationshipSerializer(serializers.ModelSerializer):
         contexts = attrs.get('contexts')
         target_user = attrs.get('target_user', getattr(self.instance, 'target_user', None))
         
-        if request and contexts:
+        if request and contexts: ## Validate that all contexts belong to the authenticated user
             for context in contexts:
                 if context.owner != request.user:
                     raise serializers.ValidationError(f"You can only tag relationships with your own contexts.")
 
-        if request and target_user == request.user:
+        if request and target_user == request.user: ## Prevent self-referential relationships
             raise serializers.ValidationError("You cannot create a relationship with yourself.")
+
+        if not contexts: ## Relationship must have min 1 context
+            raise serializers.ValidationError("Select at least one context.")
+
+        exists = Relationship.objects.filter(owner=request.user, target_user=target_user) ## Duplicate relationship check
+        if self.instance:
+            exists = exists.exclude(pk=self.instance.pk)
+        if exists.exists():
+            raise serializers.ValidationError("Relationship already exists.")
+
+        for context in contexts:
+            if context.is_public_default: ## cannot use public context, meant for public visibility, not relationship tagging
+                raise serializers.ValidationError("Public cannot be used as relationship tag.")
         
         return attrs
 

@@ -1,5 +1,6 @@
 ## Api_urls.py file is define the API endpoint URL paths for the identities app.
 from django.urls import include, path
+from identities.api.relationship_views import RelationshipPreviewAPIview
 from rest_framework_simplejwt.views import TokenRefreshView
 from ..api import (
     RegisterAPIView, LoginAPIView, LogoutAPIView,
@@ -65,7 +66,7 @@ urlpatterns = [
     # Relationship APIs.
     path('relationships/', RelationshipListCreateView.as_view(), name='relationship-list-create'),
     path('relationships/<int:pk>/', RelationshipDetailView.as_view(), name='relationship-retrieve-update-destroy'),
-
+    path('relationships/<int:pk>/preview/', RelationshipPreviewAPIview.as_view(), name='relationship-preview-api'),
 
     # Disclosure Rule APIs.
     path('disclosure-rules/', DisclosureRuleListCreateView.as_view(), name='disclosure-rule-list-create'),

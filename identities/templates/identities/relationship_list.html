@@ -1,0 +1,33 @@
+<!-- relationship_list.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head><title>Your Relationships</title></head>
+<body>
+    <h1>Your Relationships</h1>
+    <p><a href="{% url 'relationship-create' %}">+ Add new relationship</a></p>
+
+    {% for relationship in relationships %}
+        <div style="border:1px solid black; padding:10px; margin-bottom:10px;">
+            <strong>{{ relationship.target_user.username }}</strong><br>
+            Tags:
+            <ul>
+            {% for context in relationship.contexts.all %}
+                <li>{{ context.name }}</li>
+            {% empty %}
+                <li>No tags</li>
+            {% endfor %}
+            </ul>
+            <a href="{% url 'relationship-edit' relationship.pk %}">Edit tags</a>
+            <a href="{% url 'relationship-preview' relationship.pk %}">Preview as them</a>
+            <form method="post" action="{% url 'relationship-delete' relationship.pk %}" style="display:inline;">
+                {% csrf_token %}
+                <button type="submit">Delete</button>
+            </form>
+        </div>
+    {% empty %}
+        <p>You have no relationships yet.</p>
+    {% endfor %}
+
+    <p><a href="{% url 'dashboard' %}">Back to dashboard</a></p>
+</body>
+</html>

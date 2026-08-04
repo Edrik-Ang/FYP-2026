@@ -1,0 +1,25 @@
+<!-- relationship_preview.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head><title>Preview as {{ relationship.target_user.username }}</title></head>
+<body>
+    <h1>What {{ relationship.target_user.username }} sees of your profile</h1>
+    <p>Current tags:
+        {% for context in relationship.contexts.all %}{{ context.name }}{% if not forloop.last %}, {% endif %}{% empty %}none{% endfor %}
+    </p>
+
+    {% for identity in visible_data %}
+        <div>
+            <p><strong>Context:</strong> {{ identity.context_name }}</p>
+            {% for field, value in identity.visible_fields.items %}
+                <p><strong>{{ field }}:</strong> {{ value }}</p>
+            {% endfor %}
+            <hr>
+        </div>
+    {% empty %}
+        <p>Nothing is currently visible to them.</p>
+    {% endfor %}
+
+    <p><a href="{% url 'relationship-edit' relationship.pk %}">Edit tags</a> | <a href="{% url 'relationship-list' %}">Back</a></p>
+</body>
+</html>
