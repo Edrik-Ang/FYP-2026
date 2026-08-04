@@ -1,0 +1,63 @@
+<!-- disclosure_rule_form.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head><title>{% if rule %}Edit{% else %}New{% endif %} Disclosure Rule</title></head>
+<body>
+    <h1>{% if rule %}Edit Disclosure Rule{% else %}New Disclosure Rule{% endif %}</h1>
+
+    {% if errors %}
+        <ul style="color: red;">
+        {% for field, field_errors in errors.items %}
+            {% for error in field_errors %}<li>{{ field }}: {{ error }}</li>{% endfor %}
+        {% endfor %}
+        </ul>
+    {% endif %}
+
+    <form method="post">
+        {% csrf_token %}
+
+        {% if rule %}
+            <p>Identity: <strong>{{ rule.identity.identity_name }}</strong></p>
+            <p>Context: <strong>{{ rule.context.name }}</strong></p>
+            <p>Field: <strong>{{ rule.get_field_name_display }}</strong></p>
+            <input type="hidden" name="identity" value="{{ rule.identity_id }}">
+            <input type="hidden" name="context" value="{{ rule.context_id }}">
+            <input type="hidden" name="field_name" value="{{ rule.field_name }}">
+        {% else %}
+            <label>
+                Identity:
+                <select name="identity" required>
+                    {% for identity in identities %}
+                        <option value="{{ identity.pk }}">{{ identity.identity_name }} ({{ identity.context.name }})</option>
+                    {% endfor %}
+                </select>
+            </label><br>
+            <label>
+                Context:
+                <select name="context" required>
+                    {% for context in contexts %}
+                        <option value="{{ context.pk }}">{{ context.name }}</option>
+                    {% endfor %}
+                </select>
+            </label><br>
+            <label>
+                Field:
+                <select name="field_name" required>
+                    {% for value, label in field_choices %}
+                        <option value="{{ value }}">{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </label><br>
+        {% endif %}
+
+        <label>
+            <input type="checkbox" name="is_visible" {% if rule.is_visible %}checked{% endif %}>
+            Visible under this context
+        </label><br>
+
+        <button type="submit">Save</button>
+    </form>
+
+    <p><a href="{% url 'disclosure-rule-list' %}">Cancel</a></p>
+</body>
+</html>

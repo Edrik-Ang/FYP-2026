@@ -136,7 +136,6 @@ class RelationshipSerializer(serializers.ModelSerializer):
 ## handles validation to ensure that users can only create disclosure rules for their own identities and contexts, preventing unauthorized access or modifications.
 class DisclosureRuleSerializer(serializers.ModelSerializer):
 
-
     class Meta:
         model = DisclosureRule
         fields = ['id', 'identity', 'context', 'field_name','is_visible', 'created_at']
@@ -148,14 +147,24 @@ class DisclosureRuleSerializer(serializers.ModelSerializer):
         request = self.context.get('request')
         identity = attrs.get('identity', getattr(self.instance, 'identity', None))
         context = attrs.get('context', getattr(self.instance, 'context', None))
+        field_name = attrs.get('field_name', getattr(self.instance, 'field_name', None))
         
         if request and identity.owner != request.user:
             raise serializers.ValidationError("You can only set disclosure rules for your own identities.")
         
         if request and context.owner != request.user:
             raise serializers.ValidationError("You can only use your own contexts for disclosure rules.")
+
+        valid_field_names = {key for key, _ in DisclosureRule.FIELD_CHOICES}
+        if identity:
+            valid_field_names |= set(identity.attributes.values_list('key', flat=True))
+
+        if field_name not in valid_field_names:
+            raise serializers.ValidationError(f"'{field_name}' is not a valid field name for this identity.")
+        
         return attrs
 
+    
 ## for disclosure/viewing endpoint purposes
 class VisibleIdentitySerializer(serializers.Serializer):
     identity_id = serializers.IntegerField()

@@ -4,6 +4,7 @@ from django.contrib.auth import views as django_auth_views
 from django.urls import path
 
 from identities.views.context_views import context_create_view, context_delete_view, context_edit_view, context_list_view
+from identities.views.disclosure_views import disclosure_rule_create_view, disclosure_rule_delete_view, disclosure_rule_edit_view, disclosure_rule_list_view
 from identities.views.identity_views import identity_create_view, identity_delete_view, identity_edit_view, identity_list_view
 from identities.views.relationship_views import relationship_create_view, relationship_delete_view, relationship_delete_view, relationship_edit_view, relationship_list_view, relationship_preview_view
 from ..views import (
@@ -39,10 +40,17 @@ urlpatterns = [
     path('identities/<int:pk>/edit/', identity_edit_view, name='identity-edit'),
     path('identities/<int:pk>/delete/', identity_delete_view, name='identity-delete'),
 
+    #relationship urls
     path('relationships/', relationship_list_view, name='relationship-list'),
     path('relationships/new/', relationship_create_view, name='relationship-create'),
     path('relationships/<int:pk>/edit/', relationship_edit_view, name='relationship-edit'),
     path('relationships/<int:pk>/delete/', relationship_delete_view, name='relationship-delete'),
     path('relationships/<int:pk>/preview/', relationship_preview_view, name='relationship-preview'),
+
+    # disclosure urls
+    path('disclosure-rules/', disclosure_rule_list_view, name='disclosure-rule-list'),
+    path('disclosure-rules/new/', disclosure_rule_create_view, name='disclosure-rule-create'),
+    path('disclosure-rules/<int:pk>/edit/', disclosure_rule_edit_view, name='disclosure-rule-edit'),
+    path('disclosure-rules/<int:pk>/delete/', disclosure_rule_delete_view, name='disclosure-rule-delete'),
 
 ]

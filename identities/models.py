@@ -63,9 +63,9 @@ class RelationshipContext(models.Model):
 
 
 class DisclosureRule(models.Model):
-    FIELD_CHOICES = [
+    FIELD_CHOICES = [ ## default fields for start, will use identity attributes for custom fields later, but for now, just these two fields for simplicity.
         ('identity_name', 'Identity Name'),
-        ('description', 'Description') ## Look into improving this into a better field, maybe dynamic attributes
+        ('description', 'Description') 
     ]
     identity = models.ForeignKey(IdentityProfile, on_delete=models.CASCADE,related_name='disclosure_rules') ##Which identity does this disclosure rule belong to
     context = models.ForeignKey(Context, on_delete=models.CASCADE, related_name='disclosure_rules') ##Which context does this disclosure rule belong to
@@ -78,6 +78,9 @@ class DisclosureRule(models.Model):
 
     def __str__(self):
         return f"{self.identity.owner.username} {self.identity.identity_name} 's {self.field_name} visible to {self.context}"
+
+    def get_field_name_display(self):## meant to replace django's auto-gen display method, only exists when 'choices' is defined, falls back to field_name if not found in choices. 
+        return dict(self.FIELD_CHOICES).get(self.field_name, self.field_name)
     
 ## Used to store various attributes of an identity (Future work)
 ## Steam has recent games, comments, Linkedin has work experience, about card, etc

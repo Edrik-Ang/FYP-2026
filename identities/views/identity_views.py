@@ -1,6 +1,6 @@
 ## identity_views.py - web facing side for managing identities. 
 ## Delegates to IdentityService for business rules, same for IdentityListCreateView and IdentityDetailView, so rules are enforced in one place.
-from pyexpat.errors import messages
+from django.contrib import messages
 
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect, get_object_or_404
@@ -34,6 +34,7 @@ def identity_create_view(request):
             return redirect('identity-list')
         errors = serializer.errors
     contexts = ContextService.get_contexts(request.user)
+    messages.success(request, "Identity created successfully.")
     return render(request, 'identities/identity_form.html', {'errors': errors, 'contexts': contexts})
 
 
@@ -51,6 +52,7 @@ def identity_edit_view(request, pk):
             return redirect('identity-list')
         errors = serializer.errors
     contexts = ContextService.get_contexts(request.user)
+    messages.success(request, "Identity updated successfully.")
     return render(request, 'identities/identity_form.html', {'identity': identity, 'errors': errors, 'contexts': contexts})
 
 

@@ -1,0 +1,35 @@
+<!-- disclosure_rule_list.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head><title>Your Disclosure Rules</title></head>
+<body>
+    <h1>Your Disclosure Rules</h1>
+    <p><a href="{% url 'disclosure-rule-create' %}">+ Add new rule</a></p>
+
+    {% regroup rules by identity as rules_by_identity %}
+    {% for group in rules_by_identity %}
+        <h3>{{ group.grouper.identity_name }}</h3>
+        <table border="1" cellpadding="5">
+            <tr><th>Context</th><th>Field</th><th>Visible?</th><th></th></tr>
+            {% for rule in group.list %}
+                <tr>
+                    <td>{{ rule.context.name }}</td>
+                    <td>{{ rule.get_field_name_display }}</td>
+                    <td>{{ rule.is_visible|yesno:"Yes,No" }}</td>
+                    <td>
+                        <a href="{% url 'disclosure-rule-edit' rule.pk %}">Edit</a>
+                        <form method="post" action="{% url 'disclosure-rule-delete' rule.pk %}" style="display:inline;">
+                            {% csrf_token %}
+                            <button type="submit">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+            {% endfor %}
+        </table>
+    {% empty %}
+        <p>You have no disclosure rules yet.</p>
+    {% endfor %}
+
+    <p><a href="{% url 'dashboard' %}">Back to dashboard</a></p>
+</body>
+</html>

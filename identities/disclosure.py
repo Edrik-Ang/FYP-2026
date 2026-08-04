@@ -72,6 +72,3 @@ def get_visible_identities(owner, viewer):
 
 ## build public profile 
 
-## can_view_attrributes
-
-##can_edit_profile
