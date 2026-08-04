@@ -2,6 +2,9 @@ from django.test import TestCase
 
 # Create your tests here.
 
+## test for authentication
+# 
+
 ## Test for Context
 # list contexts --> Expected 200
 # create context --> Expected 201
