@@ -1,4 +1,4 @@
-# identities/api/auth_views.py
+# identities/api/auth_views.py, handles the authentication portion for API endpoints, including registration, login, and logout functionality.
 from rest_framework import generics, status
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -52,6 +52,7 @@ class LoginAPIView(APIView):
 
 class LogoutAPIView(APIView):
     """POST /api/auth/logout/ - blacklists the given refresh token."""
+    permission_classes = [AllowAny]
     def post(self, request):
         refresh_token = request.data.get('refresh')
         if not refresh_token:
