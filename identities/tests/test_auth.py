@@ -3,6 +3,8 @@
 
 from django.contrib.auth import get_user_model
 from django.urls import reverse
+from identities.serializers import RegisterSerializer
+from identities.services.auth_service import AuthService
 from rest_framework import status
 from rest_framework.test import APITestCase
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -114,3 +116,10 @@ class TokenRefreshAPITests(APITestCase):
     def test_refresh_with_garbage_token(self): ## refreshing with an invalid token should return 401 Unauthorized
         response = self.client.post(self.url, {'refresh': 'definitely a real token'})
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+class AuthServiceUnitTests(APITestCase):
+    def test_register_user_creates_public_context_directly(self):
+        serializer = RegisterSerializer(data={'username': 'directuser', 'email': 'direct@gmail.com', 'password': 'testpass123'})
+        serializer.is_valid(raise_exception=True)
+        user = AuthService.register_user(serializer)
+        self.assertTrue(Context.objects.filter(owner=user, is_public_default=True).exists())

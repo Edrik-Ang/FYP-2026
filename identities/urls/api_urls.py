@@ -33,8 +33,6 @@ urlpatterns = [
     ### APIs for relationships
     ## /api/relationships/
 
-
-
     ### APIs for profiles
     ## GET /user/me own full profile
     ## PATCH /user/me update profile (partial update, not full replace)
@@ -56,26 +54,23 @@ urlpatterns = [
     ## GET /users/:id/steam -- public steam data for profile (games, playtime), separate from the core profile since different data source/rate limit and might fail independently of the core profile..
 
     ### Context APIs.
-    path('contexts/', ContextListCreateView.as_view(), name='context-list-create'), ## GET / POST /api/contexts/
-    path('contexts/<int:pk>/', ContextDetailView.as_view(), name='context-detail-retrieve-update-destroy'), ## GET / PATCH / DELETE /api/contexts/:id/
+    path('contexts/', ContextListCreateView.as_view(), name='context-list-create-api'), ## GET / POST /api/contexts/
+    path('contexts/<int:pk>/', ContextDetailView.as_view(), name='context-retrieve-update-destroy-api'), ## GET / PATCH / DELETE /api/contexts/:id/
 
     # Identity APIs.
-    path('identities/', IdentityListCreateView.as_view(), name='identity-list-create'), ## GET / POST /api/identities/
-    path('identities/<int:pk>/', IdentityDetailView.as_view(), name='identity-retrieve-update-destroy'), ## GET / PATCH / DELETE /api/identities/:id/
+    path('identities/', IdentityListCreateView.as_view(), name='identity-list-create-api'), ## GET / POST /api/identities/
+    path('identities/<int:pk>/', IdentityDetailView.as_view(), name='identity-retrieve-update-destroy-api'), ## GET / PATCH / DELETE /api/identities/:id/
 
     # Relationship APIs.
-    path('relationships/', RelationshipListCreateView.as_view(), name='relationship-list-create'),
-    path('relationships/<int:pk>/', RelationshipDetailView.as_view(), name='relationship-retrieve-update-destroy'),
+    path('relationships/', RelationshipListCreateView.as_view(), name='relationship-list-create-api'),
+    path('relationships/<int:pk>/', RelationshipDetailView.as_view(), name='relationship-retrieve-update-destroy-api'),
     path('relationships/<int:pk>/preview/', RelationshipPreviewAPIview.as_view(), name='relationship-preview-api'),
 
     # Disclosure Rule APIs.
-    path('disclosure-rules/', DisclosureRuleListCreateView.as_view(), name='disclosure-rule-list-create'),
-    path('disclosure-rules/<int:pk>/', DisclosureRuleDetailView.as_view(), name='disclosure-rule-retrieve-update-destroy'),
+    path('disclosure-rules/', DisclosureRuleListCreateView.as_view(), name='disclosure-rule-list-create-api'),
+    path('disclosure-rules/<int:pk>/', DisclosureRuleDetailView.as_view(), name='disclosure-rule-retrieve-update-destroy-api'),
 
     path('profile/<str:username>/', ProfileAPIView.as_view(), name='profile-api'),
     path('users/', UserSearchAPIView.as_view(), name='user-search-api'),
-
-    ## Look into refactoring URL patterns, maybe look into document based API.
-    ##CRUD for Each model
 
 ]

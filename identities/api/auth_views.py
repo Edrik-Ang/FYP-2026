@@ -3,11 +3,11 @@ from rest_framework import generics, status
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny
-from django.contrib.auth import authenticate, get_user_model
-from rest_framework_simplejwt.tokens import RefreshToken
+from django.contrib.auth import get_user_model
 from rest_framework_simplejwt.exceptions import TokenError
 
 from ..serializers import RegisterSerializer
+from ..services.auth_service import AuthService
 
 User = get_user_model()
 
@@ -22,11 +22,9 @@ class RegisterAPIView(generics.CreateAPIView):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
-        refresh = RefreshToken.for_user(user)
+        tokens = AuthService.register_user(serializer)
         return Response({
-            'username': user.username,
-            'access': str(refresh.access_token),
-            'refresh': str(refresh),
+            'username': user.username, **tokens
         }, status=status.HTTP_201_CREATED)
 
 
@@ -35,18 +33,16 @@ class LoginAPIView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
-        user = authenticate(
+        user = AuthService.authenticate_user(
             request,
             username=request.data.get('username'),
-            password=request.data.get('password'),
+            password=request.data.get('password')
         )
         if user is None:
             return Response({'error': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
-        refresh = RefreshToken.for_user(user)
+        tokens = AuthService.issue_token(user)
         return Response({
-            'username': user.username,
-            'access': str(refresh.access_token),
-            'refresh': str(refresh),
+            'username': user.username, **tokens
         })
 
 
@@ -58,7 +54,7 @@ class LogoutAPIView(APIView):
         if not refresh_token:
             return Response({'error': 'Refresh token is required'}, status=status.HTTP_400_BAD_REQUEST)
         try:
-            RefreshToken(refresh_token).blacklist()
+            AuthService.blacklist_refresh_token(refresh_token)
         except TokenError:
             return Response({'error': 'Invalid or expired refresh token'}, status=status.HTTP_400_BAD_REQUEST)
         return Response(status=status.HTTP_205_RESET_CONTENT)

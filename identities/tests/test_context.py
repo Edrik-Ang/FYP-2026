@@ -15,7 +15,7 @@ User = get_user_model()
 class ContextListCreateAPITests(AuthenticatedAPITestCase):
     def setUp(self):
         super().setUp()
-        self.url = reverse('context-list-create')
+        self.url = reverse('context-list-create-api')
 
     def test_list_contexts_returns_only_own(self): ## should return own contexts, not other users' contexts
         Context.objects.create(owner=self.user, name='Work')
@@ -48,7 +48,7 @@ class ContextDetailAPITest(AuthenticatedAPITestCase):
         super().setUp()
         self.context = Context.objects.create(owner=self.user, name='Work')
         self.context2 = Context.objects.create(owner=self.user, name='Personal')
-        self.url = reverse('context-detail-retrieve-update-destroy', kwargs={'pk': self.context.pk})
+        self.url = reverse('context-retrieve-update-destroy-api', kwargs={'pk': self.context.pk})
 
     def test_retrieve_context(self): ## should retrieve the context details
         response = self.client.get(self.url)
@@ -73,13 +73,13 @@ class ContextDetailAPITest(AuthenticatedAPITestCase):
 
     def test_cannot_rename_public_context(self):
         public_context = Context.objects.create(owner=self.user, name='Public', is_public_default=True)
-        url = reverse('context-detail-retrieve-update-destroy', kwargs={'pk': public_context.pk})
+        url = reverse('context-retrieve-update-destroy-api', kwargs={'pk': public_context.pk})
         response = self.client.patch(url, {'name': 'New Public Name'})
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST) ## should return 400 Bad Request
 
     def test_cannot_delete_public_context(self):
         public_context = Context.objects.create(owner=self.user, name='Public', is_public_default=True)
-        url = reverse('context-detail-retrieve-update-destroy', kwargs={'pk': public_context.pk})
+        url = reverse('context-retrieve-update-destroy-api', kwargs={'pk': public_context.pk})
         response = self.client.delete(url)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST) ## should return 400 Bad Request
         self.assertTrue(Context.objects.filter(pk=public_context.pk).exists())
@@ -87,14 +87,14 @@ class ContextDetailAPITest(AuthenticatedAPITestCase):
     def test_cannot_edit_another_users_context(self):
         other_user = User.objects.create_user(username='alice', password='testpass123')
         other_context = Context.objects.create(owner=other_user, name='Alice Work')
-        url = reverse('context-detail-retrieve-update-destroy', args={'pk': other_context.pk})
+        url = reverse('context-retrieve-update-destroy-api', kwargs={'pk': other_context.pk})
         response = self.client.patch(url, {'name': 'Hacked'})
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND) ## should return 404 Not Found
 
     def test_cannot_delete_another_users_context(self):
         other_user = User.objects.create_user(username='alice', password='testpass123')
         other_context = Context.objects.create(owner=other_user, name='Alice Work')
-        url = reverse('context-detail-retrieve-update-destroy', args={'pk': other_context.pk})
+        url = reverse('context-retrieve-update-destroy-api', kwargs={'pk': other_context.pk})
         response = self.client.delete(url)
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND) ## should return 404 Not Found
         self.assertTrue(Context.objects.filter(pk=other_context.pk).exists())
