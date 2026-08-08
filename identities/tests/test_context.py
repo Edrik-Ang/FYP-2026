@@ -98,13 +98,3 @@ class ContextDetailAPITest(AuthenticatedAPITestCase):
         response = self.client.delete(url)
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND) ## should return 404 Not Found
         self.assertTrue(Context.objects.filter(pk=other_context.pk).exists())
-
-# TODO:
-# list contexts --> 200
-# create context --> 201
-# update context --> 200
-# delete context --> 204
-# reject duplicate context name --> 400
-# cannot delete context with identities --> 400
-# cannot edit another user's context --> 404
-# cannot delete another user's context --> 404

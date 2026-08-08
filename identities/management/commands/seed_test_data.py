@@ -1,4 +1,4 @@
-## seed_test_data.py — demo data for access-control scenarios across 4 users.
+## seed_test_data.py — demo data for access-control scenarios across 4 users. Starting point for manual testing. will use APITestCase for automated tests.
 from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand
 from identities.models import IdentityProfile, Relationship, DisclosureRule, Context, RelationshipContext
