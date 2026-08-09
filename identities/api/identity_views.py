@@ -2,7 +2,6 @@
 from identities.services.identity_service import IdentityService
 from rest_framework import generics
 from rest_framework.permissions import IsAuthenticated
-from ..models import IdentityProfile
 from ..serializers import IdentityProfileSerializer
 
 

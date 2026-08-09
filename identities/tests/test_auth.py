@@ -123,3 +123,10 @@ class AuthServiceUnitTests(APITestCase):
         serializer.is_valid(raise_exception=True)
         user = AuthService.register_user(serializer)
         self.assertTrue(Context.objects.filter(owner=user, is_public_default=True).exists())
+
+
+class AuthenticationPermissionTests(APITestCase):
+    def test_unauthenticated_user_cannot_access_contexts(self): ## unauthenticated users should not be able to access context endpoints
+        url = reverse('context-list-create-api')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED) ## should return 401 Unauthorized

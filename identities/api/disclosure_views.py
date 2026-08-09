@@ -2,7 +2,6 @@
 from identities.services.disclosure_service import DisclosureService
 from rest_framework import generics
 
-from ..models import DisclosureRule
 from ..serializers import DisclosureRuleSerializer
 
 
