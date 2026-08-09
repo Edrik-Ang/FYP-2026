@@ -8,12 +8,12 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators  import login_required
 from django.shortcuts import render, redirect, get_object_or_404
 
-from ..disclosure import get_visible_identities
 
 from ..models import Relationship
 from ..serializers import RelationshipSerializer
 from ..services.relationship_service import RelationshipService
 from ..services.context_service import ContextService
+from ..services.disclosure_service import DisclosureService
 
 
 
@@ -87,5 +87,5 @@ def relationship_preview_view(request, pk):
     View to preview what the target user of a relationship would see when viewing the current user's profile.
     """
     relationship = get_object_or_404(Relationship, pk=pk, owner=request.user)
-    visible_data = get_visible_identities(request.user, relationship.target_user)
+    visible_data = DisclosureService.get_visible_identities(request.user, relationship.target_user)
     return render(request, 'identities/relationship_preview.html', {'relationship': relationship, 'visible_data': visible_data})

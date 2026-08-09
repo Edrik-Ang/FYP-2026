@@ -4,7 +4,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth import get_user_model
 
 from identities.services.dashboard_service import DashboardService
-from ..disclosure import get_visible_identities, get_effective_contexts
+from identities.services.disclosure_service import DisclosureService
 
 User = get_user_model()
 
@@ -31,11 +31,11 @@ def profile_redirect_view(request):
 @login_required
 def profile_view(request, username):
     owner = get_object_or_404(User, username=username)
-    visible_data = get_visible_identities(owner, request.user)
+    visible_data = DisclosureService.get_visible_identities(owner, request.user)
 
     viewer_contexts = None
     if owner != request.user:
-        viewer_contexts = get_effective_contexts(owner, request.user)
+        viewer_contexts = DisclosureService.get_effective_contexts(owner, request.user)
 
     return render(request, 'identities/profile.html', {'owner': owner, 'visible_data': visible_data, 'viewer_contexts': viewer_contexts})
 

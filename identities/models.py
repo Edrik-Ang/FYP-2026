@@ -91,3 +91,29 @@ class IdentityAttribute(models.Model):
     value = models.JSONField() ## store string, list of dicts, whatever the platform from Steam and LinkedIN API provides.
     source = models.CharField(max_length=50, blank=True) ## Steam, LinkedIn, others
     created_at = models.DateTimeField(auto_now_add=True)
+
+## Used to store linked external accounts for a user, such as Steam, LinkedIn, Reddit, etc.
+class LinkedAccount(models.Model):
+    """
+    Links external identtiy provider account (e.g Steam, LinkedIn, Reddit...) to a user 
+    One row per (user, provide) -- relinking overwrites provider_uid than creating a new separate row. 
+    Provider_uid is globally unique per provider, so same external account cant be claimed by multiple users. 
+    """
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='linked_accounts')
+    provider = models.CharField(max_length=32) # e.g 'steam', 'linkedin', 'reddit'
+    provider_uid = models.CharField(max_length=255) # SteamID64, etc
+    access_token = models.CharField(max_length=512, blank=True, null=True) # Not used for Steam
+    refresh_token = models.CharField(max_length=512, blank=True, null=True) # Not used for Steam
+    token_expires_at = models.DateTimeField(blank=True, null=True) # Not used for Steam
+
+    raw_data = models.JSONField(default=dict, blank=True)
+    linked_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['provider', 'provider_uid'], name='unique_provider_uid'),
+            models.UniqueConstraint(fields=['user', 'provider'], name='unique_user_provider')
+        ]
+
+    def __str__(self):
+        return f"{self.user.username}: {self.provider} ({self.provider_uid})"
