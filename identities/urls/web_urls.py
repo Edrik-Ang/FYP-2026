@@ -6,6 +6,7 @@ from django.urls import path
 from identities.views.context_views import context_create_view, context_delete_view, context_edit_view, context_list_view
 from identities.views.disclosure_views import disclosure_rule_create_view, disclosure_rule_delete_view, disclosure_rule_edit_view, disclosure_rule_list_view
 from identities.views.identity_views import identity_create_view, identity_delete_view, identity_edit_view, identity_list_view, public_profile_view
+from identities.views.integration_views import steam_callback_view, steam_unlink_view, steam_link_view
 from identities.views.relationship_views import relationship_create_view, relationship_delete_view, relationship_delete_view, relationship_edit_view, relationship_list_view, relationship_preview_view
 from ..views import (
     home_view, dashboard_view, profile_view, profile_redirect_view,
@@ -54,5 +55,11 @@ urlpatterns = [
     path('disclosure-rules/new/', disclosure_rule_create_view, name='disclosure-rule-create'),
     path('disclosure-rules/<int:pk>/edit/', disclosure_rule_edit_view, name='disclosure-rule-edit'),
     path('disclosure-rules/<int:pk>/delete/', disclosure_rule_delete_view, name='disclosure-rule-delete'),
+
+    # Integration links for external services (e.g Steam, Discord, LinkedIn, Reddit, etc.)
+    # Steam Integration
+    path('integrations/steam/link/', steam_link_view, name='steam-link'),
+    path('integrations/steam/callback/', steam_callback_view, name='steam-callback'),
+    path('integrations/steam/unlink/', steam_unlink_view, name='steam-unlink'), 
 
 ]

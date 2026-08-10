@@ -106,6 +106,25 @@
 
 <hr>
 
+<h2>Linked Accounts</h2>
+<ul>
+    <li>
+        Steam:
+        {% if linked_accounts.steam %}
+            Linked (SteamID: {{ linked_accounts.steam.provider_uid }}, since {{ linked_accounts.steam.linked_at|date:"d M Y" }})
+            <form method="post" action="{% url 'steam-unlink' %}" style="display:inline;">
+                {% csrf_token %}
+                <button type="submit">Unlink</button>
+            </form>
+        {% else %}
+            Not linked
+            <a href="{% url 'steam-link' %}">Link Steam</a>
+        {% endif %}
+    </li>
+</ul>
+
+<hr>
+
 <h2>Browse Users</h2>
 
 <form method="GET" action="{% url 'profile-redirect' %}">
