@@ -111,7 +111,23 @@
     <li>
         Steam:
         {% if linked_accounts.steam %}
-            Linked (SteamID: {{ linked_accounts.steam.provider_uid }}, since {{ linked_accounts.steam.linked_at|date:"d M Y" }})
+            <br>
+            {% if linked_accounts.steam.raw_data.avatarmedium %}
+                <img src="{{ linked_accounts.steam.raw_data.avatarmedium }}" alt="Steam avatar" width="64" height="64">
+            {% endif %}
+            <strong>{{ linked_accounts.steam.raw_data.personaname|default:"(name unavailable)" }}</strong>
+            (SteamID: {{ linked_accounts.steam.provider_uid }})
+            <br>
+            {% if linked_accounts.steam.raw_data.summary %}
+                <em>{{ linked_accounts.steam.raw_data.summary }}</em>
+            {% else %}
+                <em>No profile summary set.</em>
+            {% endif %}
+            <br>
+            <form method="post" action="{% url 'steam-refresh' %}" style="display:inline;">
+                {% csrf_token %}
+                <button type="submit">Refresh Steam data</button>
+            </form>
             <form method="post" action="{% url 'steam-unlink' %}" style="display:inline;">
                 {% csrf_token %}
                 <button type="submit">Unlink</button>

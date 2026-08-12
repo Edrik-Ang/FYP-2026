@@ -33,3 +33,13 @@ def steam_unlink_view(request):
         SteamService.unlink_steam_account(request.user)
         messages.success(request, "Steam account unlinked successfully.")
     return redirect("dashboard")
+
+
+def steam_refresh_view(request):
+    if request.method == "POST":
+        try:
+            SteamService.refresh_player_data(request.user)
+            messages.success(request, "Steam player data refreshed successfully.")
+        except ValidationError as e:
+            messages.error(request, str(e.detail[0] if isinstance(e.detail, list) else e.detail))
+    return redirect("dashboard")
