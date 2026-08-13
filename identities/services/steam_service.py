@@ -9,16 +9,19 @@ from xml.etree import ElementTree
 from django.conf import settings
 
 from identities.models import LinkedAccount
-
+## all these only work if the account linked is public, otherwise the API returns empty data.
 STEAM_OPENID_URL = "https://steamcommunity.com/openid/login"
 STEAM_CLAIMED_ID_PREFIX = "https://steamcommunity.com/openid/id/"
-STEAM_PLAYER_SUMMARY_URL = "https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v2/"
+STEAM_PLAYER_SUMMARY_URL = "https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v2/" ## Player summary endpoint
 STEAM_XML_PROFILE_URL = "https://steamcommunity.com/profiles/{steamid64}?xml=1"
 
+STEAM_OWNED_GAMES_URL = "https://api.steampowered.com/IPlayerService/GetOwnedGames/v1/" ## Owned games endpoint 
+STEAM_RECENT_GAMES_URL = "https://api.steampowered.com/IPlayerService/GetRecentlyPlayedGames/v1/" ## Recent games endpoint
+STEAM_BADGES_URL = "https://api.steampowered.com/IPlayerService/GetBadges/v1/" ## Badges endpoint
 
 class SteamService:
     """
-    Handles Steam OpenID 2.0 handskake and links a verified SteamID 64 ot currently authenticated user's LinkedAccount.
+    Handles Steam OpenID 2.0 handshake and links a verified SteamID 64 to currently authenticated user's LinkedAccount.
     Depends on Django's session (not JWT): Steam's redirect to callback is plain browser GET, 
     so request.user only available because web routes already authenticate via session cookie across redirects.
     """
@@ -76,7 +79,7 @@ class SteamService:
         Takes in user, steamid64, and optional raw_data (dict) from Steam API. Raises ValidationError if the SteamID is already linked to another user.
         """
         existing = LinkedAccount.objects.filter(provider='steam', provider_uid=steamid64).first()
-        if existing and existing.user != user.id:
+        if existing and existing.user_id != user.id:
             raise ValidationError("This Steam account is already linked to another user.")
 
         try:
@@ -139,6 +142,9 @@ class SteamService:
             'avatarfull': player.get('avatarfull', ''),
             'is_public':player.get('communityvisibilitystate') == 3,
             'summary': SteamService._fetch_profile_summary(steamid64),
+            'badges': SteamService._fetch_badges(steamid64),
+            'owned_games': SteamService._fetch_owned_games(steamid64),
+            'recent_games': SteamService._fetch_recent_games(steamid64),
         }
 
 
@@ -152,3 +158,87 @@ class SteamService:
             return summary_el.text.strip() if summary_el is not None and summary_el.text else ''
         except Exception:
             return ''
+
+
+    @staticmethod
+    def _fetch_owned_games(steamid64):
+        """ Fetch games owned by user, returns visible=False rather raising if Game detail is private."""
+        try: 
+            response = requests.get(STEAM_OWNED_GAMES_URL, params={
+                'key': settings.STEAM_API_KEY,
+                'steamid': steamid64,
+                'include_appinfo': 1,
+                'include_played_free_games': 1,
+            }, timeout=10)
+            response.raise_for_status()
+            data = response.json().get('response', {})
+            if 'game_count' not in data:
+                return {'visible': False, 'count':0, 'games': []}
+
+            games = [{
+                'appid': g.get('appid'),
+                'name': g.get('name'),
+                'playtime_forever': g.get('playtime_forever', 0),
+                'icon_url': g.get(
+                    f"https://media.steampowered.com/steamcommunity/public/images/apps/"
+                    f"{g.get('appid')}/{g.get('img_icon_url')}.jpg"
+                    if g.get('img_icon_url') else ''
+                ),
+            } 
+                for g in data.get('games', [])
+            ]
+            games.sort(key=lambda x: x['playtime_forever'], reverse=True)
+            return {'visible':True, 'count': data.get('game_count', 0), 'games': games}
+        except Exception:
+            return {'visible': False, 'count':0, 'games': []}
+
+    @staticmethod
+    def _fetch_recent_games(steamid64):
+        """ Fetch games recently played by user, returns visible=False rather raising if Game detail is private."""
+        try: 
+            response = requests.get(STEAM_RECENT_GAMES_URL, params={
+                'key': settings.STEAM_API_KEY,
+                'steamid': steamid64,
+            }, timeout=10)
+            response.raise_for_status()
+            data = response.json().get('response', {})
+            return [
+                {
+                'appid': g.get('appid'),
+                'name': g.get('name', ''),
+                'playtime_2weeks_minutes': g.get('playtime_2weeks', 0),
+                }
+                for g in data.get('games', [])
+            ]
+        except Exception:
+            return []
+
+
+    @staticmethod
+    def _fetch_badges(steamid64):
+        """ Fetch badges owned by user"""
+        try:
+            response = requests.get(STEAM_BADGES_URL, params= {
+                'key': settings.STEAM_API_KEY,
+                'steamid': steamid64,
+            }, timeout=10)
+            response.raise_for_status()
+            data = response.json().get('response', {})
+            return {
+                'player_level': data.get('player_level', 0),
+                'player_xp': data.get('player_xp', 0),
+                'badges': [
+                    {
+                        'badgeid': b.get('badgeid'),
+                        'appid': b.get('appid'),
+                        'level': b.get('level', 0),
+                    } 
+                    for b in data.get('badges', [])
+                ],
+            }
+        except Exception:
+            return {
+                'player_level': 0,
+                'player_xp': 0,
+                'badges': []
+            }

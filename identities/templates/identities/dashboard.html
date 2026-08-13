@@ -120,6 +120,8 @@
             <br>
             {% if linked_accounts.steam.raw_data.summary %}
                 <em>{{ linked_accounts.steam.raw_data.summary }}</em>
+            {% elif not linked_accounts.steam.raw_data.is_public %}
+                <em>This Steam profile isn't public, so its summary can't be retrieved.</em>
             {% else %}
                 <em>No profile summary set.</em>
             {% endif %}
@@ -136,6 +138,30 @@
             Not linked
             <a href="{% url 'steam-link' %}">Link Steam</a>
         {% endif %}
+        {% with raw=linked_accounts.steam.raw_data %}
+<p><strong>Games:</strong>
+    {% if raw.owned_games.visible %}
+        {{ raw.owned_games.count }} owned.
+        <ul>
+        {% for game in raw.owned_games.games|slice:":5" %}
+            <li>{{ game.name }} — {{ game.playtime_forever }} min</li>
+        {% endfor %}
+        </ul>
+    {% else %}
+        <em>Game details aren't public.</em>
+    {% endif %}
+</p>
+
+<p><strong>Recently played:</strong>
+    {% for game in raw.recent_games %}
+        {{ game.name }} ({{ game.playtime_2weeks_minutes }} min in last 2 weeks)<br>
+    {% empty %}
+        <em>Nothing recent, or game details aren't public.</em>
+    {% endfor %}
+</p>
+
+<p><strong>Badges:</strong> Level {{ raw.badges.player_level }} ({{ raw.badges.player_xp }} XP), {{ raw.badges.badges|length }} badges.</p>
+{% endwith %}
     </li>
 </ul>
 
