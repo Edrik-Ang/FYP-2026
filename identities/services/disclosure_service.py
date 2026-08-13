@@ -69,20 +69,33 @@ class DisclosureService:
 
 
     @staticmethod
+    def _resolve_field_values(identity, field_name):
+        """
+        Resolves a field_name to its actual value -- checks built in IdentityProfile first, then falls back to IdentityAttribute lookup for provider sourced fields (Steam, LinkedIn, etc)
+        """
+        builtin_keys = {key for key, _ in DisclosureRule.FIELD_CHOICES}
+        if field_name in builtin_keys:
+            return getattr(identity, field_name, None)
+        attributes = identity.attributes.filter(key=field_name).first()
+        return attributes.value if attributes else None
+
+    @staticmethod
     def get_visible_identities(owner, viewer):
         """
         Full visible profile payload for other users looking at owner's profile.
         """
         identities = IdentityProfile.objects.filter(owner=owner)
         if owner == viewer:
-            return [
-                {
+            results = []
+            for identity in identities:
+                visible_fields = {f: DisclosureService._resolve_field_values(identity, f) for f, _ in DisclosureRule.FIELD_CHOICES}
+                visible_fields.update({attr.key: attr.value for attr in identity.attributes.all()})
+                results.append({
                     'identity_id': identity.id,
                     'context_name': identity.context.name,
-                    'visible_fields':{f:getattr(identity, f) for f, _ in DisclosureRule.FIELD_CHOICES},
-                }
-                for identity in identities
-            ]
+                    'visible_fields': visible_fields,
+                })
+            return results
         viewer_contexts = DisclosureService.get_effective_contexts(owner, viewer)
         visible_data = []
         for identity in identities:
@@ -91,6 +104,6 @@ class DisclosureService:
                 visible_data.append({
                     'identity_id': identity.id,
                     'context_name': identity.context.name,
-                    'visible_fields': {f: getattr(identity, f) for f in fields},
+                    'visible_fields': {f: DisclosureService._resolve_field_values(identity, f) for f in fields},
                 })
         return visible_data

@@ -63,13 +63,14 @@ class RelationshipContext(models.Model):
 
 
 class DisclosureRule(models.Model):
-    FIELD_CHOICES = [ ## default fields for start, will use identity attributes for custom fields later, but for now, just these two fields for simplicity.
+    FIELD_CHOICES = [ ## Built-in identity fields. No longer enforced via choices=  -- 
+                      ## IdentityAttribute keys are equally valid field_names now, validated dynamically in DisclosureService.
         ('identity_name', 'Identity Name'),
         ('description', 'Description') 
     ]
     identity = models.ForeignKey(IdentityProfile, on_delete=models.CASCADE,related_name='disclosure_rules') ##Which identity does this disclosure rule belong to
     context = models.ForeignKey(Context, on_delete=models.CASCADE, related_name='disclosure_rules') ##Which context does this disclosure rule belong to
-    field_name = models.CharField(max_length=100,choices=FIELD_CHOICES) 
+    field_name = models.CharField(max_length=100) ## was choices=FIELD_CHOICES 
     is_visible = models.BooleanField(default=False) ##Is this field visible to the specified context
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -91,6 +92,12 @@ class IdentityAttribute(models.Model):
     value = models.JSONField() ## store string, list of dicts, whatever the platform from Steam and LinkedIN API provides.
     source = models.CharField(max_length=50, blank=True) ## Steam, LinkedIn, others
     created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('identity', 'key') # one value per key per identity
+
+    def __str__(self):
+        return f"{self.identity.identity_name} - {self.key}: ({self.source})"
 
 ## Used to store linked external accounts for a user, such as Steam, LinkedIn, Reddit, etc.
 class LinkedAccount(models.Model):

@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Steam Profile Data</title>
+</head>
+<body>
+
+<h1>Steam Profile Data</h1>
+<p><a href="{% url 'dashboard' %}">Back to dashboard</a></p>
+
+<hr>
+
+<h2>{{ linked_account.raw_data.personaname }}</h2>
+{% if linked_account.raw_data.avatarfull %}
+    <img src="{{ linked_account.raw_data.avatarfull }}" alt="Steam avatar" width="128" height="128">
+{% endif %}
+<p>SteamID: {{ linked_account.provider_uid }}</p>
+
+<hr>
+
+{% if not identities %}
+    <p>You don't have any identities yet. <a href="{% url 'identity-create' %}">Create one</a> first, then come back here to attach Steam data to it.</p>
+{% else %}
+    <form method="post">
+        {% csrf_token %}
+
+        <label for="identity_id">Add to identity:</label>
+        <select name="identity_id" id="identity_id" required>
+            {% for identity in identities %}
+                <option value="{{ identity.id }}">{{ identity.identity_name }} ({{ identity.context.name }})</option>
+            {% endfor %}
+        </select>
+
+        <fieldset>
+            <legend>Fields to include</legend>
+
+            <label>
+                <input type="checkbox" name="fields" value="summary" {% if not linked_account.raw_data.summary %}disabled{% endif %}>
+                Profile Summary
+                {% if linked_account.raw_data.summary %}
+                    — <em>{{ linked_account.raw_data.summary|truncatewords:15 }}</em>
+                {% else %}
+                    (not available)
+                {% endif %}
+            </label><br>
+
+            <label>
+                <input type="checkbox" name="fields" value="badges" {% if not linked_account.raw_data.badges.badges %}disabled{% endif %}>
+                Badges ({{ linked_account.raw_data.badges.badges|length }} badges, Level {{ linked_account.raw_data.badges.player_level }})
+            </label><br>
+
+            <label>
+                <input type="checkbox" name="fields" value="owned_games" {% if not linked_account.raw_data.owned_games.visible %}disabled{% endif %}>
+                Owned Games ({{ linked_account.raw_data.owned_games.count }} games)
+            </label><br>
+
+            <label>
+                <input type="checkbox" name="fields" value="recent_games" {% if not linked_account.raw_data.recent_games %}disabled{% endif %}>
+                Recently Played ({{ linked_account.raw_data.recent_games|length }} games)
+            </label><br>
+        </fieldset>
+
+        <button type="submit">Add selected data to identity</button>
+    </form>
+{% endif %}
+
+<hr>
+
+<h2>Currently exposed Steam data</h2>
+{% for identity, steam_keys in identity_steam_data %}
+    {% if steam_keys %}
+        <p><strong>{{ identity.identity_name }}</strong>: {{ steam_keys|join:", " }}
+        — <a href="{% url 'disclosure-rule-create' %}">manage visibility</a></p>
+    {% endif %}
+{% endfor %}
+
+</body>
+</html>

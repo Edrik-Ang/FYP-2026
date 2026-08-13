@@ -2,7 +2,7 @@
 ## Delegates to RelationshipService for business rules, same for RelationshipListCreateView and RelationshipDetailView, so rules are enforced in one place.
 ## __build_relationship_data forces 'contexts' to always present in the submitted data, even as []. working around HTML's unchecked checkbox omission behavior 
 ## so serializer' select at least one check reliably fires form the form.
-from pyexpat.errors import messages
+from django.contrib import messages
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators  import login_required
@@ -48,7 +48,7 @@ def relationship_create_view(request):
     users = User.objects.exclude(id=request.user.id).order_by('username')
     ## exclude public, matches serializer rules and prevents user from using public context for relationship tagging, meant for public visibility, not relationship tagging
     contexts = ContextService.get_contexts(request.user).exclude(is_public_default=True)
-    return render(request, 'identites/relationship_form.html', {'errors': errors, 'users': users, 'contexts': contexts})
+    return render(request, 'identities/relationship_form.html', {'errors': errors, 'users': users, 'contexts': contexts})
 
 @login_required
 def relationship_edit_view(request, pk):

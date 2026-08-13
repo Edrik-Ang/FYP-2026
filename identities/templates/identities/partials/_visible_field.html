@@ -1,0 +1,19 @@
+{% if field == 'owned_games' %}
+    <p><strong>Owned games ({{ value.count }}):</strong></p>
+    <ul>
+    {% for game in value.games %}
+        <li>{{ game.name }}</li>
+    {% endfor %}
+    </ul>
+{% elif field == 'recent_games' %}
+    <p><strong>Recently played:</strong></p>
+    <ul>
+    {% for game in value %}
+        <li>{{ game.name }}</li>
+    {% endfor %}
+    </ul>
+{% elif field == 'badges' %}
+    <p><strong>Badges:</strong> Level {{ value.player_level }}, {{ value.badges|length }} badges</p>
+{% else %}
+    <p><strong>{{ field }}:</strong> {{ value }}</p>
+{% endif %}

@@ -7,7 +7,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect, get_object_or_404
 
-from ..models import DisclosureRule
+from ..models import DisclosureRule, IdentityAttribute
 from ..serializers import DisclosureRuleSerializer
 from ..services.disclosure_service import DisclosureService
 from ..services.identity_service import IdentityService
@@ -39,7 +39,7 @@ def disclosure_rule_create_view(request):
         errors = serializer.errors
     identities = IdentityService.list_identities(request.user)
     contexts = ContextService.get_contexts(request.user)
-    field_choices = DisclosureRule.FIELD_CHOICES
+    field_choices = list(DisclosureRule.FIELD_CHOICES) + [(key, key) for key in IdentityAttribute.objects.filter(identity__owner=request.user).values_list('key', flat=True).distinct()]
     return render(request, 'identities/disclosure_rule_form.html', {'errors': errors, 'identities': identities, 'contexts': contexts, 'field_choices': field_choices})
 
 

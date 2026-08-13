@@ -6,7 +6,7 @@ from django.urls import path
 from identities.views.context_views import context_create_view, context_delete_view, context_edit_view, context_list_view
 from identities.views.disclosure_views import disclosure_rule_create_view, disclosure_rule_delete_view, disclosure_rule_edit_view, disclosure_rule_list_view
 from identities.views.identity_views import identity_create_view, identity_delete_view, identity_edit_view, identity_list_view, public_profile_view
-from identities.views.integration_views import steam_callback_view, steam_refresh_view, steam_unlink_view, steam_link_view
+from identities.views.integration_views import steam_callback_view, steam_profile_view, steam_refresh_view, steam_unlink_view, steam_link_view
 from identities.views.relationship_views import relationship_create_view, relationship_delete_view, relationship_delete_view, relationship_edit_view, relationship_list_view, relationship_preview_view
 from ..views import (
     home_view, dashboard_view, profile_view, profile_redirect_view,
@@ -62,5 +62,5 @@ urlpatterns = [
     path('integrations/steam/callback/', steam_callback_view, name='steam-callback'),
     path('integrations/steam/unlink/', steam_unlink_view, name='steam-unlink'), 
     path('integrations/steam/refresh/', steam_refresh_view, name='steam-refresh'),  
-
+    path('integrations/steam/profile/', steam_profile_view, name='steam-profile'),
 ]

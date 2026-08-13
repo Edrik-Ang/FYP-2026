@@ -12,7 +12,7 @@
         <div>
             <p><strong>Context:</strong> {{ identity.context_name }}</p>
             {% for field, value in identity.visible_fields.items %}
-                <p><strong>{{ field }}:</strong> {{ value }}</p>
+                {% include 'identities/partials/_visible_field.html' with field=field value=value %}
             {% endfor %}
             <hr>
         </div>
