@@ -7,6 +7,7 @@ from django.urls import reverse
 from rest_framework.exceptions import ValidationError
 from xml.etree import ElementTree
 from django.conf import settings
+from django.core.cache import cache
 
 from identities.models import LinkedAccount
 ## all these only work if the account linked is public, otherwise the API returns empty data.
@@ -18,12 +19,15 @@ STEAM_XML_PROFILE_URL = "https://steamcommunity.com/profiles/{steamid64}?xml=1"
 STEAM_OWNED_GAMES_URL = "https://api.steampowered.com/IPlayerService/GetOwnedGames/v1/" ## Owned games endpoint 
 STEAM_RECENT_GAMES_URL = "https://api.steampowered.com/IPlayerService/GetRecentlyPlayedGames/v1/" ## Recent games endpoint
 STEAM_BADGES_URL = "https://api.steampowered.com/IPlayerService/GetBadges/v1/" ## Badges endpoint
+STEAM_WISHLIST_URL = "https://api.steampowered.com/IWishlistService/GetWishlist/v1/" ## Wishlist endpoint
+STEAM_STORE_APP_LIST_URL = "https://api.steampowered.com/IStoreService/GetAppList/v1/" ## App list endpoint for appid to name lookup
 
 class SteamService:
     """
     Handles Steam OpenID 2.0 handshake and links a verified SteamID 64 to currently authenticated user's LinkedAccount.
     Depends on Django's session (not JWT): Steam's redirect to callback is plain browser GET, 
     so request.user only available because web routes already authenticate via session cookie across redirects.
+    Also fetches steam profile data via official ISteamUser endpoints and unofficial XML profile feed.
     """
 
     @staticmethod
@@ -134,7 +138,7 @@ class SteamService:
             raise ValidationError("Steam profile not found or private.")
         player = players[0]
 
-        return {
+        return { ## one shot fetch all steam data I want.
             'personaname': player.get('personaname', ''),
             'profileurl': player.get('profileurl', ''),
             'avatar': player.get('avatar', ''),
@@ -145,6 +149,7 @@ class SteamService:
             'badges': SteamService._fetch_badges(steamid64),
             'owned_games': SteamService._fetch_owned_games(steamid64),
             'recent_games': SteamService._fetch_recent_games(steamid64),
+            'wishlist': SteamService._fetch_wishlist(steamid64),
         }
 
 
@@ -242,3 +247,62 @@ class SteamService:
                 'player_xp': 0,
                 'badges': []
             }
+
+
+    @staticmethod
+    def _get_app_name_lookup():
+        """ Fetches a lookup of appid to app name from Steam API. Caches the result for 24 hours to avoid excessive API calls. """
+        lookup = cache.get('steam_app_name_lookup')
+        if lookup is not None:
+            return lookup
+        lookup = {}
+        last_appid = 0
+        try:
+            for _ in range(10):
+                response = requests.get(STEAM_STORE_APP_LIST_URL, params ={
+                    'key': settings.STEAM_API_KEY,
+                    'max_results': 50000,
+                    'last_appid': last_appid,
+                    'include_games': 'true',
+                    'include_dlc': 'true',
+                    'include_software': 'true',
+                }, timeout=30)
+                response.raise_for_status()
+                data = response.json().get('response', {})
+                for app in data.get('apps', []):
+                    if app.get('name'):
+                        lookup[int(app['appid'])] = app['name']
+                if not data.get("have_more_results"):
+                    break
+                last_appid = data.get("last_appid", last_appid)
+        except Exception:
+            return {}
+        cache.set('steam_app_name_lookup', lookup, timeout=24*60*60)  # Cache for 24 hours
+        return lookup
+
+
+    @staticmethod
+    def _fetch_wishlist(steamid64):
+        """ Fetch wishlist of games of own steam account 
+        return visible=False if wishlist is private or not available, otherwise return list of appids in wishlist.
+         """
+        try:
+            response = requests.get(STEAM_WISHLIST_URL, params = {
+                'key': settings.STEAM_API_KEY,
+                'steamid': steamid64,
+            }, timeout=10)
+            if response.status_code != 200:
+                return {'visible': False, 'count':0, 'items': []}
+            item_data = response.json().get('response', {}).get('items', [])
+            name_lookup = SteamService._get_app_name_lookup()
+            items = [
+                {
+                    'appid': item.get('appid'),
+                    'name': name_lookup.get(int(item.get('appid')), f"App {item.get('appid')}"),
+                    'store_url': f"https://store.steampowered.com/app/{item.get('appid')}/",
+                }
+                for item in item_data
+            ]
+            return {'visible': True, 'count': len(items), 'items': items}
+        except Exception:
+            return {'visible': False, 'count':0, 'items': []}

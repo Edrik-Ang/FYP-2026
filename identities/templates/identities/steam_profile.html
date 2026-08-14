@@ -58,6 +58,11 @@
                 <input type="checkbox" name="fields" value="recent_games" {% if not linked_account.raw_data.recent_games %}disabled{% endif %}>
                 Recently Played ({{ linked_account.raw_data.recent_games|length }} games)
             </label><br>
+
+            <label>
+                <input type="checkbox" name="fields" value="wishlist" {% if not linked_account.raw_data.wishlist.visible %}disabled{% endif %}>
+                Wishlist ({{ linked_account.raw_data.wishlist.count }} games)
+            </label><br>
         </fieldset>
 
         <button type="submit">Add selected data to identity</button>

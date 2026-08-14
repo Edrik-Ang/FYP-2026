@@ -9,7 +9,7 @@ from rest_framework.exceptions import ValidationError
 
 from identities.services.steam_service import SteamService
 
-STEAM_MATERIALIZE_FIELDS = ['summary', 'badges', 'owned_games', 'recent_games']
+STEAM_MATERIALIZE_FIELDS = ['summary', 'badges', 'owned_games', 'recent_games', 'wishlist']
 
 
 @login_required

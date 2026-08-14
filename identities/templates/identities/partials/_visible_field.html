@@ -14,6 +14,13 @@
     </ul>
 {% elif field == 'badges' %}
     <p><strong>Badges:</strong> Level {{ value.player_level }}, {{ value.badges|length }} badges</p>
+{% elif field == 'wishlist' %}
+    <p><strong>Wishlist ({{ value.count }}):</strong></p>
+    <ul>
+    {% for item in value.items %}
+        <li><a href="{{ item.store_url }}"> {{ item.name }}</a></li>
+    {% endfor %}
+    </ul>
 {% else %}
     <p><strong>{{ field }}:</strong> {{ value }}</p>
 {% endif %}
