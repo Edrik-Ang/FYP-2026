@@ -1,10 +1,12 @@
 <!DOCTYPE html>
+{% load tailwind_cli %}
 <html lang="en">
     <head>
         <title> Welcome to my FYP Project </title>
+        {% tailwind_css %}
     </head>
     <body>
-        <h1> Welcome to my identity Management API Project </h1>
+<h1 class="text-3xl font-bold text-blue-600">Welcome to my identity Management API Project</h1>
             <a href="{% url 'login' %}">
              <button> Login</button>
             </a>
