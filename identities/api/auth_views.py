@@ -21,8 +21,9 @@ class RegisterAPIView(generics.CreateAPIView):
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        user = serializer.save()
-        tokens = AuthService.register_user(serializer)
+    
+        user = AuthService.register_user(serializer) # single save -- creates the user + default context
+        tokens = AuthService.issue_token(user) # separate call to actually generate tokens
         return Response({
             'username': user.username, **tokens
         }, status=status.HTTP_201_CREATED)

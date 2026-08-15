@@ -8,10 +8,10 @@ admin.site.register(Context)
 admin.site.register(RelationshipContext)
 
 ## Django admin creds for testing:
-##username: edrik
-##password: !@#$4321
-## Users: John 
-# password: Password!1
+##username: admin
+##password: password!1
+## Test Users: John 
+# password: testpass123
 
 
 ## postgresql: 

@@ -6,4 +6,5 @@ venv/
 .venv/
 __pycache__/
 *.pyc
+reset_db.bat
 
