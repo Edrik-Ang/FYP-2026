@@ -1,34 +1,32 @@
-<!DOCTYPE html>
-<html lang="en">
-    <head>
-        <title>Profile Page</title>
-    </head>
-    <body>
-        <h1>{{ owner.username }}'s Profile</h1>
+{% extends "identities/base.html" %}
 
-        {% if owner == request.user %}
-            <p>This is your own profile.</p>
-        {% elif viewer_contexts %}
-            <p>You are viewing this profile as:
-                <strong>{% for ctx in viewer_contexts %}{{ ctx.name }}{% if not forloop.last %}, {% endif %}{% endfor %}</strong>
-            </p>
-        {% endif %}
+{% block title %}{{ owner.username }}'s Profile | FYP Identity Project{% endblock %}
 
-        <h2>Visible Information</h2>
-        {% for identity in visible_data %}
-            <div>
-                <p><strong>Context:</strong> {{ identity.context_name }}</p>
-                {% for field, value in identity.visible_fields.items %}
-                    {% include 'identities/partials/_visible_field.html' with field=field value=value %}
-                {% endfor %}
-                <hr>
-            </div>
-        {% empty %}
-            <p>No information is visible to you based on your relationship with this user.</p>
-        {% endfor %}
+{% block content %}
+    <h1 class="text-2xl font-bold mb-4">{{ owner.username }}'s Profile</h1>
 
-        <p>
-            <a href="{% url 'dashboard' %}">Back to dashboard</a>
+    {% if owner == request.user %}
+        <p class="text-sm text-gray-500 mb-6">This is your own profile.</p>
+    {% elif viewer_contexts %}
+        <p class="text-sm text-gray-500 mb-6">
+            You are viewing this profile as:
+            <strong class="text-gray-700">{% for ctx in viewer_contexts %}{{ ctx.name }}{% if not forloop.last %}, {% endif %}{% endfor %}</strong>
         </p>
-    </body>
-</html>
+    {% endif %}
+
+    <h2 class="text-lg font-semibold mb-3">Visible Information</h2>
+    {% for identity in visible_data %}
+        <div class="bg-white rounded-lg shadow-sm p-4 mb-3">
+            <p class="text-sm text-gray-500 mb-2"><strong class="text-gray-700">Context:</strong> {{ identity.context_name }}</p>
+            {% for field, value in identity.visible_fields.items %}
+                {% include 'identities/partials/_visible_field.html' with field=field value=value %}
+            {% endfor %}
+        </div>
+    {% empty %}
+        <p class="text-gray-500 text-sm">No information is visible to you based on your relationship with this user.</p>
+    {% endfor %}
+
+    <p class="mt-6">
+        <a href="{% url 'dashboard' %}" class="text-sm text-gray-500 hover:underline">Back to dashboard</a>
+    </p>
+{% endblock %}

@@ -1,35 +1,60 @@
-<!-- disclosure_rule_list.html -->
-<!DOCTYPE html>
-<html lang="en">
-<head><title>Your Disclosure Rules</title></head>
-<body>
-    <h1>Your Disclosure Rules</h1>
-    <p><a href="{% url 'disclosure-rule-create' %}">+ Add new rule</a></p>
+{% extends "identities/base.html" %}
+
+{% block title %}Disclosure Rules | FYP Identity Project{% endblock %}
+
+{% block content %}
+    <h1 class="text-2xl font-bold mb-6">Your Disclosure Rules</h1>
+
+    <p class="mb-6">
+        <a href="{% url 'disclosure-rule-create' %}" class="text-sm px-3 py-1.5 rounded bg-blue-600 text-white hover:bg-blue-700">+ Add new rule</a>
+    </p>
 
     {% regroup rules by identity as rules_by_identity %}
     {% for group in rules_by_identity %}
-        <h3>{{ group.grouper.identity_name }}</h3>
-        <table border="1" cellpadding="5">
-            <tr><th>Context</th><th>Field</th><th>Visible?</th><th></th></tr>
-            {% for rule in group.list %}
-                <tr>
-                    <td>{{ rule.context.name }}</td>
-                    <td>{{ rule.get_field_name_display }}</td>
-                    <td>{{ rule.is_visible|yesno:"Yes,No" }}</td>
-                    <td>
-                        <a href="{% url 'disclosure-rule-edit' rule.pk %}">Edit</a>
-                        <form method="post" action="{% url 'disclosure-rule-delete' rule.pk %}" style="display:inline;">
-                            {% csrf_token %}
-                            <button type="submit">Delete</button>
-                        </form>
-                    </td>
-                </tr>
-            {% endfor %}
-        </table>
+        <div class="mb-8">
+            <h3 class="text-lg font-semibold mb-3">{{ group.grouper.identity_name }}</h3>
+            <div class="bg-white rounded-lg shadow-sm overflow-hidden">
+                <table class="w-full text-sm text-left">
+                    <thead class="bg-gray-50 text-gray-500 uppercase text-xs">
+                        <tr>
+                            <th class="px-4 py-2">Context</th>
+                            <th class="px-4 py-2">Field</th>
+                            <th class="px-4 py-2">Visible?</th>
+                            <th class="px-4 py-2"></th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100">
+                        {% for rule in group.list %}
+                            <tr>
+                                <td class="px-4 py-2">{{ rule.context.name }}</td>
+                                <td class="px-4 py-2">{{ rule.field_name }}</td>
+                                <td class="px-4 py-2">
+                                    {% if rule.is_visible %}
+                                        <span class="text-green-600 font-medium">Yes</span>
+                                    {% else %}
+                                        <span class="text-red-600 font-medium">No</span>
+                                    {% endif %}
+                                </td>
+                                <td class="px-4 py-2">
+                                    <div class="flex gap-3 items-center">
+                                        <a href="{% url 'disclosure-rule-edit' rule.pk %}" class="text-blue-600 hover:underline">Edit</a>
+                                        <form method="post" action="{% url 'disclosure-rule-delete' rule.pk %}">
+                                            {% csrf_token %}
+                                            <button type="submit" class="text-red-600 hover:underline">Delete</button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
     {% empty %}
-        <p>You have no disclosure rules yet.</p>
+        <p class="text-gray-500 text-sm">You have no disclosure rules yet.</p>
     {% endfor %}
 
-    <p><a href="{% url 'dashboard' %}">Back to dashboard</a></p>
-</body>
-</html>
+    <p class="mt-6">
+        <a href="{% url 'dashboard' %}" class="text-sm text-gray-500 hover:underline">Back to dashboard</a>
+    </p>
+{% endblock %}

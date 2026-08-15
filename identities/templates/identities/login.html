@@ -1,36 +1,32 @@
-<!DOCTYPE html>
-<html lang="en">
-    <head>
-        <title>Login Page</title>
-    </head>
-    <body>
-    <h1> Login to your account </h1>
-    <h2> Please enter your credentials </h2>
-    {% if form.errors %}
-    <p style="color:red;">Invalid username or password.</p>
-    {% endif %}
-    <form method="post">
-        {% csrf_token %}
-        <p>
-            Username:
-            <input 
-                type="text"
-                name="username"  
-                required
-            >
-        </p>
+{% extends "identities/base.html" %}
 
-        <p>
-            Password:
-            <input
-                type="password" 
-                name="password"  
-                required>
-        </p>
-            <button type="submit">Login</button>
-            <a href="{% url 'password_reset' %}">Forgot Password?</a>
+{% block title %}Login | FYP Identity Project{% endblock %}
+
+{% block content %}
+    <div class="max-w-sm mx-auto">
+        <h1 class="text-2xl font-bold mb-1">Login to your account</h1>
+        <p class="text-gray-500 text-sm mb-6">Please enter your credentials</p>
+
+        {% if form.errors %}
+            <p class="bg-red-50 text-red-700 text-sm rounded p-3 mb-4">Invalid username or password.</p>
+        {% endif %}
+
+        <form method="post" class="space-y-4">
+            {% csrf_token %}
+            <label class="block">
+                <span class="text-sm font-medium text-gray-700">Username</span>
+                <input type="text" name="username" required
+                       class="mt-1 block w-full border border-gray-300 rounded px-3 py-1.5 text-sm">
+            </label>
+            <label class="block">
+                <span class="text-sm font-medium text-gray-700">Password</span>
+                <input type="password" name="password" required
+                       class="mt-1 block w-full border border-gray-300 rounded px-3 py-1.5 text-sm">
+            </label>
+            <div class="flex items-center justify-between">
+                <button type="submit" class="text-sm px-4 py-1.5 rounded bg-blue-600 text-white hover:bg-blue-700">Login</button>
+                <a href="{% url 'password_reset' %}" class="text-sm text-blue-600 hover:underline">Forgot password?</a>
+            </div>
         </form>
-
-        
-    </body>
-</html>
+    </div>
+{% endblock %}

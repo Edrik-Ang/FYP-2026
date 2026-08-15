@@ -1,18 +1,15 @@
-<!DOCTYPE html>
-{% load tailwind_cli %}
-<html lang="en">
-    <head>
-        <title> Welcome to my FYP Project </title>
-        {% tailwind_css %}
-    </head>
-    <body>
-<h1 class="text-3xl font-bold text-blue-600">Welcome to my identity Management API Project</h1>
-            <a href="{% url 'login' %}">
-             <button> Login</button>
-            </a>
-        <br>
-        <a href="{% url 'register' %}">
-            <button> Register new account</button>
+{% extends "identities/base.html" %}
+
+{% block title %}Home | FYP Identity Project{% endblock %}
+
+{% block content %}
+    <h1 class="text-3xl font-bold text-blue-600">Welcome to my Identity Management API Project</h1>
+    <div class="mt-6 space-x-4">
+        <a href="{% url 'login' %}">
+            <button class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Login</button>
         </a>
-    </body>
-</html>
+        <a href="{% url 'register' %}">
+            <button class="border border-blue-600 text-blue-600 px-4 py-2 rounded hover:bg-blue-50">Register new account</button>
+        </a>
+    </div>
+{% endblock %}

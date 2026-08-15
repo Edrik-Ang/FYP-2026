@@ -1,187 +1,137 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <title>Dashboard</title>
-</head>
+{% extends "identities/base.html" %}
 
-<body>
+{% block title %}Dashboard | FYP Identity Project{% endblock %}
 
-<h1>Welcome, {{ me.username }}!</h1>
+{% block content %}
+    <h1 class="text-2xl font-bold mb-1">Welcome, {{ me.username }}!</h1>
+    <p class="text-gray-500 mb-8">Here's an overview of your identities, relationships, and contexts.</p>
 
-<hr>
-
-<h2>Statistics</h2>
-
-<ul>
-    <li>Total Identities: {{ stats.identity_count }}</li>
-    <li>Total Relationships: {{ stats.relationship_count }}</li>
-    <li>Total Contexts: {{ stats.context_count }}</li>
-</ul>
-<p><a href="{% url 'public-profile' %}">View Public Profile</a></p>
-<p><a href="{% url 'context-list' %}">Manage your contexts</a></p>
-<p><a href="{% url 'identity-list' %}">Manage your identities</a></p>
-<p><a href="{% url 'relationship-list' %}">Manage your relationships</a></p>
-<p><a href="{% url 'disclosure-rule-list' %}">Manage your disclosure rules</a></p>
-<hr>
-
-<h2>Your Identities</h2>
-
-{% for identity in identities %}
-    <div style="border:1px solid black; padding:10px; margin-bottom:10px;">
-
-        <strong>{{ identity.identity_name }}</strong><br>
-
-        Context:
-        {{ identity.context.name }}
-
-        <br>
-
-        Description:
-        {{ identity.description }}
-
+    <!-- Statistics -->
+    <div class="grid grid-cols-3 gap-4 mb-8">
+        <div class="bg-white rounded-lg shadow-sm p-4 text-center">
+            <p class="text-2xl font-bold text-blue-600">{{ stats.identity_count }}</p>
+            <p class="text-sm text-gray-500">Identities</p>
+        </div>
+        <div class="bg-white rounded-lg shadow-sm p-4 text-center">
+            <p class="text-2xl font-bold text-blue-600">{{ stats.relationship_count }}</p>
+            <p class="text-sm text-gray-500">Relationships</p>
+        </div>
+        <div class="bg-white rounded-lg shadow-sm p-4 text-center">
+            <p class="text-2xl font-bold text-blue-600">{{ stats.context_count }}</p>
+            <p class="text-sm text-gray-500">Contexts</p>
+        </div>
     </div>
 
-{% empty %}
+    <!-- Quick links -->
+    <div class="flex flex-wrap gap-3 mb-10">
+        <a href="{% url 'public-profile' %}" class="text-sm px-3 py-1.5 rounded border border-gray-300 hover:bg-gray-100">View public profile</a>
+        <a href="{% url 'context-list' %}" class="text-sm px-3 py-1.5 rounded border border-gray-300 hover:bg-gray-100">Manage contexts</a>
+        <a href="{% url 'identity-list' %}" class="text-sm px-3 py-1.5 rounded border border-gray-300 hover:bg-gray-100">Manage identities</a>
+        <a href="{% url 'relationship-list' %}" class="text-sm px-3 py-1.5 rounded border border-gray-300 hover:bg-gray-100">Manage relationships</a>
+        <a href="{% url 'disclosure-rule-list' %}" class="text-sm px-3 py-1.5 rounded border border-gray-300 hover:bg-gray-100">Manage disclosure rules</a>
+    </div>
 
-    <p>No identities created yet.</p>
-
-{% endfor %}
-
-<hr>
-
-<h2>Your Relationships</h2>
-
-{% for relationship in relationships %}
-
-    <div style="margin-bottom:15px;">
-
-        <strong>{{ relationship.target_user.username }}</strong>
-
-        <br>
-
-        Context Tags:
-
-        <ul>
-
-        {% for context in relationship.contexts.all %}
-
-            <li>{{ context.name }}</li>
-
+    <!-- Identities -->
+    <section class="mb-10">
+        <h2 class="text-lg font-semibold mb-3">Your Identities</h2>
+        {% for identity in identities %}
+            <div class="bg-white rounded-lg shadow-sm p-4 mb-3">
+                <p class="font-semibold">{{ identity.identity_name }}</p>
+                <p class="text-sm text-gray-500">Context: {{ identity.context.name }}</p>
+                <p class="text-sm mt-1">{{ identity.description }}</p>
+            </div>
         {% empty %}
-
-            <li>No tags</li>
-
+            <p class="text-gray-500 text-sm">No identities created yet.</p>
         {% endfor %}
+    </section>
 
+    <!-- Relationships -->
+    <section class="mb-10">
+        <h2 class="text-lg font-semibold mb-3">Your Relationships</h2>
+        {% for relationship in relationships %}
+            <div class="bg-white rounded-lg shadow-sm p-4 mb-3">
+                <p class="font-semibold">{{ relationship.target_user.username }}</p>
+                <div class="flex flex-wrap gap-1 mt-2">
+                {% for context in relationship.contexts.all %}
+                    <span class="text-xs bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full">{{ context.name }}</span>
+                {% empty %}
+                    <span class="text-xs text-gray-400">No tags</span>
+                {% endfor %}
+                </div>
+            </div>
+        {% empty %}
+            <p class="text-gray-500 text-sm">You have no relationships.</p>
+        {% endfor %}
+    </section>
+
+    <!-- Contexts -->
+    <section class="mb-10">
+        <h2 class="text-lg font-semibold mb-3">Your Contexts</h2>
+        <ul class="space-y-1">
+        {% for context in contexts %}
+            <li class="text-sm">
+                {{ context.name }}
+                {% if context.is_public_default %}
+                    <span class="text-xs text-gray-400">(default public)</span>
+                {% endif %}
+            </li>
+        {% endfor %}
         </ul>
+    </section>
 
-    </div>
-
-{% empty %}
-
-    <p>You have no relationships.</p>
-
-{% endfor %}
-<hr>
-
-<h2>Your Contexts</h2>
-
-<ul>
-
-{% for context in contexts %}
-
-    <li>
-
-        {{ context.name }}
-
-        {% if context.is_public_default %}
-            (Default Public Context)
-        {% endif %}
-
-    </li>
-
-{% endfor %}
-
-</ul>
-
-<hr>
-
-<h2>Linked Accounts</h2>
-<ul>
-    <li>
-        Steam:
-        {% if linked_accounts.steam %}
-            <br>
-            {% if linked_accounts.steam.raw_data.avatarmedium %}
-                <img src="{{ linked_accounts.steam.raw_data.avatarmedium }}" alt="Steam avatar" width="64" height="64">
-            {% endif %}
-            <strong>{{ linked_accounts.steam.raw_data.personaname|default:"(name unavailable)" }}</strong>
-            (SteamID: {{ linked_accounts.steam.provider_uid }})
-            <br>
-            {% if linked_accounts.steam.raw_data.summary %}
-                <em>{{ linked_accounts.steam.raw_data.summary }}</em>
-            {% elif not linked_accounts.steam.raw_data.is_public %}
-                <em>This Steam profile isn't public, so its summary can't be retrieved.</em>
+    <!-- Linked Accounts -->
+    <section class="mb-10">
+        <h2 class="text-lg font-semibold mb-3">Linked Accounts</h2>
+        <div class="bg-white rounded-lg shadow-sm p-4">
+            <p class="font-semibold mb-2">Steam</p>
+            {% if linked_accounts.steam %}
+                <div class="flex items-center gap-3 mb-2">
+                    {% if linked_accounts.steam.raw_data.avatarmedium %}
+                        <img src="{{ linked_accounts.steam.raw_data.avatarmedium }}" alt="Steam avatar" class="w-12 h-12 rounded">
+                    {% endif %}
+                    <div>
+                        <p class="font-medium">{{ linked_accounts.steam.raw_data.personaname|default:"(name unavailable)" }}</p>
+                        <p class="text-xs text-gray-500">SteamID: {{ linked_accounts.steam.provider_uid }}</p>
+                    </div>
+                </div>
+                {% if linked_accounts.steam.raw_data.summary %}
+                    <p class="text-sm italic text-gray-600 mb-3">{{ linked_accounts.steam.raw_data.summary }}</p>
+                {% elif not linked_accounts.steam.raw_data.is_public %}
+                    <p class="text-sm italic text-gray-400 mb-3">This Steam profile isn't public, so its summary can't be retrieved.</p>
+                {% else %}
+                    <p class="text-sm italic text-gray-400 mb-3">No profile summary set.</p>
+                {% endif %}
+                <div class="flex gap-2">
+                    <form method="post" action="{% url 'steam-refresh' %}">
+                        {% csrf_token %}
+                        <button type="submit" class="text-sm px-3 py-1.5 rounded border border-gray-300 hover:bg-gray-100">Refresh Steam data</button>
+                    </form>
+                    <form method="post" action="{% url 'steam-unlink' %}">
+                        {% csrf_token %}
+                        <button type="submit" class="text-sm px-3 py-1.5 rounded border border-red-300 text-red-600 hover:bg-red-50">Unlink</button>
+                    </form>
+                    <form method="post" action="{% url 'steam-profile' %}">
+                        {% csrf_token %}
+                        <button type="submit" class="text-sm px-3 py-1.5 rounded bg-blue-600 text-white hover:bg-blue-700">View Steam profile</button>
+                    </form>
+                </div>
             {% else %}
-                <em>No profile summary set.</em>
+                <p class="text-sm text-gray-500">Not linked — <a href="{% url 'steam-link' %}" class="text-blue-600 hover:underline">Link Steam</a></p>
             {% endif %}
-            <br>
-            <form method="post" action="{% url 'steam-refresh' %}" style="display:inline;">
-                {% csrf_token %}
-                <button type="submit">Refresh Steam data</button>
-            </form>
-            <form method="post" action="{% url 'steam-unlink' %}" style="display:inline;">
-                {% csrf_token %}
-                <button type="submit">Unlink</button>
-            </form>
-        {% else %}
-            Not linked
-            <a href="{% url 'steam-link' %}">Link Steam</a>
-        {% endif %}
-       <form method="post" action="{% url 'steam-profile' %}" style="display:inline;">
-            {% csrf_token %}
-            <button type="submit">View Steam Profile</button>
+        </div>
+    </section>
+
+    <!-- Browse users -->
+    <section>
+        <h2 class="text-lg font-semibold mb-3">Browse Users</h2>
+        <form method="GET" action="{% url 'profile-redirect' %}" class="flex gap-2">
+            <select name="username" required class="border border-gray-300 rounded px-3 py-1.5 text-sm">
+                <option value="">Select a user</option>
+                {% for user in users %}
+                    <option value="{{ user.username }}">{{ user.username }}</option>
+                {% endfor %}
+            </select>
+            <button type="submit" class="text-sm px-3 py-1.5 rounded bg-blue-600 text-white hover:bg-blue-700">View Profile</button>
         </form>
-    </li>
-</ul>
-
-<hr>
-
-<h2>Browse Users</h2>
-
-<form method="GET" action="{% url 'profile-redirect' %}">
-
-    <select name="username" required>
-
-        <option value="">Select a user</option>
-
-        {% for user in users %}
-
-            <option value="{{ user.username }}">
-                {{ user.username }}
-            </option>
-
-        {% endfor %}
-
-    </select>
-
-    <button type="submit">
-        View Profile
-    </button>
-
-</form>
-
-<hr>
-
-<form method="post" action="{% url 'logout' %}">
-
-    {% csrf_token %}
-
-    <button type="submit">
-        Logout
-    </button>
-
-</form>
-
-</body>
-</html>
+    </section>
+{% endblock %}

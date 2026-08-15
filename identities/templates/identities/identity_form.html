@@ -1,46 +1,49 @@
-<!-- identity_form.html -->
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <title>{% if identity %}Edit{% else %}New{% endif %} Identity</title>
-</head>
-<body>
-    <h1>{% if identity %}Edit Identity{% else %}New Identity{% endif %}</h1>
+{% extends "identities/base.html" %}
+
+{% block title %}{% if identity %}Edit{% else %}New{% endif %} Identity | FYP Identity Project{% endblock %}
+
+{% block content %}
+    <h1 class="text-2xl font-bold mb-6">{% if identity %}Edit Identity{% else %}New Identity{% endif %}</h1>
 
     {% if errors %}
-        <ul style="color: red;">
-        {% for field, field_errors in errors.items %}
-            {% for error in field_errors %}
-                <li>{{ field }}: {{ error }}</li>
+        <div class="bg-red-50 text-red-700 text-sm rounded p-3 mb-4">
+            <ul class="list-disc list-inside">
+            {% for field, field_errors in errors.items %}
+                {% for error in field_errors %}
+                    <li>{{ field }}: {{ error }}</li>
+                {% endfor %}
             {% endfor %}
-        {% endfor %}
-        </ul>
+            </ul>
+        </div>
     {% endif %}
 
-    <form method="post">
+    <form method="post" class="max-w-sm space-y-4">
         {% csrf_token %}
-        <label>
-            Identity name:
-            <input type="text" name="identity_name" value="{{ identity.identity_name|default:'' }}" required>
-        </label><br>
-        <label>
-            Context:
-            <select name="context" required>
+        <label class="block">
+            <span class="text-sm font-medium text-gray-700">Identity name</span>
+            <input type="text" name="identity_name" value="{{ identity.identity_name|default:'' }}" required
+                   class="mt-1 block w-full border border-gray-300 rounded px-3 py-1.5 text-sm">
+        </label>
+        <label class="block">
+            <span class="text-sm font-medium text-gray-700">Context</span>
+            <select name="context" required class="mt-1 block w-full border border-gray-300 rounded px-3 py-1.5 text-sm">
                 {% for context in contexts %}
-                    <option value="{{ context.pk }}" 
+                    <option value="{{ context.pk }}"
                         {% if identity.context_id == context.pk or preselected_context_id == context.pk %}selected{% endif %}>
                         {{ context.name }}
                     </option>
                 {% endfor %}
             </select>
-        </label><br>
-        <label>
-            Description:
-            <textarea name="description">{{ identity.description|default:'' }}</textarea>
-        </label><br>
-        <button type="submit">Save</button>
+        </label>
+        <label class="block">
+            <span class="text-sm font-medium text-gray-700">Description</span>
+            <textarea name="description" rows="4"
+                      class="mt-1 block w-full border border-gray-300 rounded px-3 py-1.5 text-sm">{{ identity.description|default:'' }}</textarea>
+        </label>
+        <button type="submit" class="text-sm px-4 py-1.5 rounded bg-blue-600 text-white hover:bg-blue-700">Save</button>
     </form>
 
-    <p><a href="{% url 'identity-list' %}">Cancel</a></p>
-</body>
-</html>
+    <p class="mt-6">
+        <a href="{% url 'identity-list' %}" class="text-sm text-gray-500 hover:underline">Cancel</a>
+    </p>
+{% endblock %}

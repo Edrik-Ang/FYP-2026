@@ -1,25 +1,27 @@
-<!-- relationship_preview.html -->
-<!DOCTYPE html>
-<html lang="en">
-<head><title>Preview as {{ relationship.target_user.username }}</title></head>
-<body>
-    <h1>What {{ relationship.target_user.username }} sees of your profile</h1>
-    <p>Current tags:
+{% extends "identities/base.html" %}
+
+{% block title %}Preview as {{ relationship.target_user.username }} | FYP Identity Project{% endblock %}
+
+{% block content %}
+    <h1 class="text-2xl font-bold mb-2">What {{ relationship.target_user.username }} sees of your profile</h1>
+    <p class="text-sm text-gray-500 mb-6">
+        Current tags:
         {% for context in relationship.contexts.all %}{{ context.name }}{% if not forloop.last %}, {% endif %}{% empty %}none{% endfor %}
     </p>
 
     {% for identity in visible_data %}
-        <div>
-            <p><strong>Context:</strong> {{ identity.context_name }}</p>
+        <div class="bg-white rounded-lg shadow-sm p-4 mb-3">
+            <p class="text-sm text-gray-500 mb-2"><strong class="text-gray-700">Context:</strong> {{ identity.context_name }}</p>
             {% for field, value in identity.visible_fields.items %}
                 {% include 'identities/partials/_visible_field.html' with field=field value=value %}
             {% endfor %}
-            <hr>
         </div>
     {% empty %}
-        <p>Nothing is currently visible to them.</p>
+        <p class="text-gray-500 text-sm">Nothing is currently visible to them.</p>
     {% endfor %}
 
-    <p><a href="{% url 'relationship-edit' relationship.pk %}">Edit tags</a> | <a href="{% url 'relationship-list' %}">Back</a></p>
-</body>
-</html>
+    <p class="mt-6 space-x-3">
+        <a href="{% url 'relationship-edit' relationship.pk %}" class="text-sm text-blue-600 hover:underline">Edit tags</a>
+        <a href="{% url 'relationship-list' %}" class="text-sm text-gray-500 hover:underline">Back</a>
+    </p>
+{% endblock %}

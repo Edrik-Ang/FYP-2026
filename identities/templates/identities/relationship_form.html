@@ -1,51 +1,57 @@
-<!-- relationship_form.html -->
-<!DOCTYPE html>
-<html lang="en">
-<head><title>{% if relationship %}Edit{% else %}New{% endif %} Relationship</title></head>
-<body>
-    <h1>{% if relationship %}Edit Relationship: {{ relationship.target_user.username }}{% else %}New Relationship{% endif %}</h1>
+{% extends "identities/base.html" %}
+
+{% block title %}{% if relationship %}Edit{% else %}New{% endif %} Relationship | FYP Identity Project{% endblock %}
+
+{% block content %}
+    <h1 class="text-2xl font-bold mb-6">
+        {% if relationship %}Edit Relationship: {{ relationship.target_user.username }}{% else %}New Relationship{% endif %}
+    </h1>
 
     {% if errors %}
-        <ul style="color: red;">
-        {% for field, field_errors in errors.items %}
-            {% for error in field_errors %}<li>{{ field }}: {{ error }}</li>{% endfor %}
-        {% endfor %}
-        </ul>
+        <div class="bg-red-50 text-red-700 text-sm rounded p-3 mb-4">
+            <ul class="list-disc list-inside">
+            {% for field, field_errors in errors.items %}
+                {% for error in field_errors %}<li>{{ field }}: {{ error }}</li>{% endfor %}
+            {% endfor %}
+            </ul>
+        </div>
     {% endif %}
 
-    <form method="post">
+    <form method="post" class="max-w-sm space-y-4">
         {% csrf_token %}
 
         {% if relationship %}
-            <p>With: <strong>{{ relationship.target_user.username }}</strong></p>
+            <p class="text-sm">With: <strong>{{ relationship.target_user.username }}</strong></p>
         {% else %}
-            <label>
-                Relationship with:
-                <select name="target_user" required>
+            <label class="block">
+                <span class="text-sm font-medium text-gray-700">Relationship with</span>
+                <select name="target_user" required class="mt-1 block w-full border border-gray-300 rounded px-3 py-1.5 text-sm">
                     <option value="">Select a user</option>
                     {% for user in users %}
                         <option value="{{ user.pk }}">{{ user.username }}</option>
                     {% endfor %}
                 </select>
-            </label><br>
+            </label>
         {% endif %}
 
-        <fieldset>
-            <legend>Context tags</legend>
+        <fieldset class="border border-gray-200 rounded p-3">
+            <legend class="text-sm font-medium text-gray-700 px-1">Context tags</legend>
             {% for context in contexts %}
-                <label>
+                <label class="flex items-center gap-2 text-sm mb-1">
                     <input type="checkbox" name="contexts" value="{{ context.pk }}"
-                        {% if context.pk in current_context_ids %}checked{% endif %}>
+                        {% if context.pk in current_context_ids %}checked{% endif %}
+                        class="rounded border-gray-300">
                     {{ context.name }}
-                </label><br>
+                </label>
             {% empty %}
-                <p>You have no non-public contexts yet — <a href="{% url 'context-create' %}">create one first</a>.</p>
+                <p class="text-sm text-gray-500">You have no non-public contexts yet — <a href="{% url 'context-create' %}" class="text-blue-600 hover:underline">create one first</a>.</p>
             {% endfor %}
         </fieldset>
 
-        <button type="submit">Save</button>
+        <button type="submit" class="text-sm px-4 py-1.5 rounded bg-blue-600 text-white hover:bg-blue-700">Save</button>
     </form>
 
-    <p><a href="{% url 'relationship-list' %}">Cancel</a></p>
-</body>
-</html>
+    <p class="mt-6">
+        <a href="{% url 'relationship-list' %}" class="text-sm text-gray-500 hover:underline">Cancel</a>
+    </p>
+{% endblock %}

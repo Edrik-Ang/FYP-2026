@@ -1,41 +1,37 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <title>Your Contexts</title>
-</head>
-<body>
-    <h1>Your Contexts</h1>
+{% extends "identities/base.html" %}
 
-    {% if messages %}
-        <ul>
-        {% for message in messages %}
-            <li{% if message.tags == 'error' %} style="color: red;"{% else %} style="color: green;"{% endif %}>
-                {{ message }}
-            </li>
-        {% endfor %}
-        </ul>
-    {% endif %}
+{% block title %}Contexts | FYP Identity Project{% endblock %}
 
-    <p><a href="{% url 'context-create' %}">+ Add new context</a></p>
+{% block content %}
+    <h1 class="text-2xl font-bold mb-6">Your Contexts</h1>
 
-{% for context in contexts %}
-    <div style="border:1px solid black; padding:10px; margin-bottom:10px;">
-        <strong>{{ context.name }}</strong>
-        {% if context.is_public_default %}
-            <em>(default public — cannot be renamed or deleted)</em>
-        {% else %}
-            <br>
-            <a href="{% url 'context-edit' context.pk %}">Edit</a>
-            <form method="post" action="{% url 'context-delete' context.pk %}" style="display:inline;">
-                {% csrf_token %}
-                <button type="submit">Delete</button>
-            </form>
-        {% endif %}
-    </div>
-{% empty %}
-    <p>You have no contexts yet.</p>
-{% endfor %}
+    <p class="mb-6">
+        <a href="{% url 'context-create' %}" class="text-sm px-3 py-1.5 rounded bg-blue-600 text-white hover:bg-blue-700">+ Add new context</a>
+    </p>
 
-    <p><a href="{% url 'dashboard' %}">Back to dashboard</a></p>
-</body>
-</html>
+    {% for context in contexts %}
+        <div class="bg-white rounded-lg shadow-sm p-4 mb-3 flex justify-between items-center">
+            <div>
+                <span class="font-semibold">{{ context.name }}</span>
+                {% if context.is_public_default %}
+                    <span class="text-xs text-gray-400 ml-2">(default public — cannot be renamed or deleted)</span>
+                {% endif %}
+            </div>
+            {% if not context.is_public_default %}
+                <div class="flex gap-2 items-center">
+                    <a href="{% url 'context-edit' context.pk %}" class="text-sm text-blue-600 hover:underline">Edit</a>
+                    <form method="post" action="{% url 'context-delete' context.pk %}">
+                        {% csrf_token %}
+                        <button type="submit" class="text-sm text-red-600 hover:underline">Delete</button>
+                    </form>
+                </div>
+            {% endif %}
+        </div>
+    {% empty %}
+        <p class="text-gray-500 text-sm">You have no contexts yet.</p>
+    {% endfor %}
+
+    <p class="mt-6">
+        <a href="{% url 'dashboard' %}" class="text-sm text-gray-500 hover:underline">Back to dashboard</a>
+    </p>
+{% endblock %}

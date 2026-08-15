@@ -1,83 +1,85 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <title>Steam Profile Data</title>
-</head>
-<body>
+{% extends "identities/base.html" %}
 
-<h1>Steam Profile Data</h1>
-<p><a href="{% url 'dashboard' %}">Back to dashboard</a></p>
+{% block title %}Steam Profile Data | FYP Identity Project{% endblock %}
 
-<hr>
+{% block content %}
+    <h1 class="text-2xl font-bold mb-1">Steam Profile Data</h1>
+    <p class="mb-6"><a href="{% url 'dashboard' %}" class="text-sm text-gray-500 hover:underline">Back to dashboard</a></p>
 
-<h2>{{ linked_account.raw_data.personaname }}</h2>
-{% if linked_account.raw_data.avatarfull %}
-    <img src="{{ linked_account.raw_data.avatarfull }}" alt="Steam avatar" width="128" height="128">
-{% endif %}
-<p>SteamID: {{ linked_account.provider_uid }}</p>
+    <div class="bg-white rounded-lg shadow-sm p-4 mb-8">
+        <div class="flex items-center gap-4">
+            {% if linked_account.raw_data.avatarfull %}
+                <img src="{{ linked_account.raw_data.avatarfull }}" alt="Steam avatar" class="w-24 h-24 rounded">
+            {% endif %}
+            <div>
+                <h2 class="text-lg font-semibold">{{ linked_account.raw_data.personaname }}</h2>
+                <p class="text-sm text-gray-500">SteamID: {{ linked_account.provider_uid }}</p>
+            </div>
+        </div>
+    </div>
 
-<hr>
+    {% if not identities %}
+        <p class="text-sm text-gray-500 mb-8">
+            You don't have any identities yet. <a href="{% url 'identity-create' %}" class="text-blue-600 hover:underline">Create one</a> first, then come back here to attach Steam data to it.
+        </p>
+    {% else %}
+        <form method="post" class="bg-white rounded-lg shadow-sm p-4 mb-8 space-y-4">
+            {% csrf_token %}
 
-{% if not identities %}
-    <p>You don't have any identities yet. <a href="{% url 'identity-create' %}">Create one</a> first, then come back here to attach Steam data to it.</p>
-{% else %}
-    <form method="post">
-        {% csrf_token %}
+            <label class="block">
+                <span class="text-sm font-medium text-gray-700">Add to identity</span>
+                <select name="identity_id" id="identity_id" required class="mt-1 block w-full border border-gray-300 rounded px-3 py-1.5 text-sm">
+                    {% for identity in identities %}
+                        <option value="{{ identity.id }}">{{ identity.identity_name }} ({{ identity.context.name }})</option>
+                    {% endfor %}
+                </select>
+            </label>
 
-        <label for="identity_id">Add to identity:</label>
-        <select name="identity_id" id="identity_id" required>
-            {% for identity in identities %}
-                <option value="{{ identity.id }}">{{ identity.identity_name }} ({{ identity.context.name }})</option>
-            {% endfor %}
-        </select>
+            <fieldset class="border border-gray-200 rounded p-3">
+                <legend class="text-sm font-medium text-gray-700 px-1">Fields to include</legend>
 
-        <fieldset>
-            <legend>Fields to include</legend>
+                <label class="flex items-center gap-2 text-sm mb-2">
+                    <input type="checkbox" name="fields" value="summary" {% if not linked_account.raw_data.summary %}disabled{% endif %} class="rounded border-gray-300">
+                    Profile Summary
+                    {% if linked_account.raw_data.summary %}
+                        <span class="text-gray-500 italic">— {{ linked_account.raw_data.summary|truncatewords:15 }}</span>
+                    {% else %}
+                        <span class="text-gray-400">(not available)</span>
+                    {% endif %}
+                </label>
 
-            <label>
-                <input type="checkbox" name="fields" value="summary" {% if not linked_account.raw_data.summary %}disabled{% endif %}>
-                Profile Summary
-                {% if linked_account.raw_data.summary %}
-                    — <em>{{ linked_account.raw_data.summary|truncatewords:15 }}</em>
-                {% else %}
-                    (not available)
-                {% endif %}
-            </label><br>
+                <label class="flex items-center gap-2 text-sm mb-2">
+                    <input type="checkbox" name="fields" value="badges" {% if not linked_account.raw_data.badges.badges %}disabled{% endif %} class="rounded border-gray-300">
+                    Badges ({{ linked_account.raw_data.badges.badges|length }} badges, Level {{ linked_account.raw_data.badges.player_level }})
+                </label>
 
-            <label>
-                <input type="checkbox" name="fields" value="badges" {% if not linked_account.raw_data.badges.badges %}disabled{% endif %}>
-                Badges ({{ linked_account.raw_data.badges.badges|length }} badges, Level {{ linked_account.raw_data.badges.player_level }})
-            </label><br>
+                <label class="flex items-center gap-2 text-sm mb-2">
+                    <input type="checkbox" name="fields" value="owned_games" {% if not linked_account.raw_data.owned_games.visible %}disabled{% endif %} class="rounded border-gray-300">
+                    Owned Games ({{ linked_account.raw_data.owned_games.count }} games)
+                </label>
 
-            <label>
-                <input type="checkbox" name="fields" value="owned_games" {% if not linked_account.raw_data.owned_games.visible %}disabled{% endif %}>
-                Owned Games ({{ linked_account.raw_data.owned_games.count }} games)
-            </label><br>
+                <label class="flex items-center gap-2 text-sm mb-2">
+                    <input type="checkbox" name="fields" value="recent_games" {% if not linked_account.raw_data.recent_games %}disabled{% endif %} class="rounded border-gray-300">
+                    Recently Played ({{ linked_account.raw_data.recent_games|length }} games)
+                </label>
 
-            <label>
-                <input type="checkbox" name="fields" value="recent_games" {% if not linked_account.raw_data.recent_games %}disabled{% endif %}>
-                Recently Played ({{ linked_account.raw_data.recent_games|length }} games)
-            </label><br>
+                <label class="flex items-center gap-2 text-sm">
+                    <input type="checkbox" name="fields" value="wishlist" {% if not linked_account.raw_data.wishlist.visible %}disabled{% endif %} class="rounded border-gray-300">
+                    Wishlist ({{ linked_account.raw_data.wishlist.count }} games)
+                </label>
+            </fieldset>
 
-            <label>
-                <input type="checkbox" name="fields" value="wishlist" {% if not linked_account.raw_data.wishlist.visible %}disabled{% endif %}>
-                Wishlist ({{ linked_account.raw_data.wishlist.count }} games)
-            </label><br>
-        </fieldset>
-
-        <button type="submit">Add selected data to identity</button>
-    </form>
-{% endif %}
-
-<hr>
-
-<h2>Currently exposed Steam data</h2>
-{% for identity, steam_keys in identity_steam_data %}
-    {% if steam_keys %}
-        <p><strong>{{ identity.identity_name }}</strong>: {{ steam_keys|join:", " }}
-        — <a href="{% url 'disclosure-rule-create' %}">manage visibility</a></p>
+            <button type="submit" class="text-sm px-4 py-1.5 rounded bg-blue-600 text-white hover:bg-blue-700">Add selected data to identity</button>
+        </form>
     {% endif %}
-{% endfor %}
 
-</body>
-</html>
+    <h2 class="text-lg font-semibold mb-3">Currently exposed Steam data</h2>
+    {% for identity, steam_keys in identity_steam_data %}
+        {% if steam_keys %}
+            <p class="text-sm mb-2">
+                <strong>{{ identity.identity_name }}</strong>: {{ steam_keys|join:", " }}
+                — <a href="{% url 'disclosure-rule-create' %}" class="text-blue-600 hover:underline">manage visibility</a>
+            </p>
+        {% endif %}
+    {% endfor %}
+{% endblock %}
