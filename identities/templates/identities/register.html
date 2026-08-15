@@ -28,18 +28,22 @@
             </label>
             <label class="block">
                 <span class="text-sm font-medium text-gray-700">Email</span>
-                <input type="email" name="email" value="{{ request.POST.email|default:'' }}"
+                <input type="email" name="email" value="{{ request.POST.email|default:'' }}" required
                        class="mt-1 block w-full border border-gray-300 rounded px-3 py-1.5 text-sm">
             </label>
             <label class="block">
                 <span class="text-sm font-medium text-gray-700">Password</span>
-                <input type="password" name="password" required
+                <input type="password" name="password" required minlength="8"
+                       pattern="^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$"
+                       title="At least 8 characters, including at least one letter and one number"
                        class="mt-1 block w-full border border-gray-300 rounded px-3 py-1.5 text-sm">
+                <p class="text-xs text-gray-500 mt-1">8-20 characters, with at least one letter and one digit.</p>
             </label>
             <label class="block">
                 <span class="text-sm font-medium text-gray-700">Confirm Password</span>
                 <input type="password" name="password2" required
                        class="mt-1 block w-full border border-gray-300 rounded px-3 py-1.5 text-sm">
+            </label>
             <button type="submit" class="w-full text-sm px-4 py-1.5 rounded bg-blue-600 text-white hover:bg-blue-700">Create account</button>
         </form>
 

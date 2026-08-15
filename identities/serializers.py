@@ -1,7 +1,11 @@
 ## serializers.py file
 ## handles serialization and deserialization of data for the identities app
 ## converts complex data types like model instances into native Python datatypes that can then be easily rendered into JSON, XML or other content types.
+import re
+
 from django.contrib.auth import get_user_model
+from django.contrib.auth.password_validation import validate_password as django_validate_password
+from django.core.exceptions import ValidationError as DjangoValidationError
 from .models import Context, IdentityProfile, Relationship, DisclosureRule
 from rest_framework import serializers
 
@@ -10,17 +14,30 @@ User = get_user_model()
 ## Serializer for registering new users, including username, email, and password fields. Password is write-only for security.
 ## Handles converting User instances to and from JSON, and creating new users (Password encryption is handled by Django's built-in create_user method).
 class RegisterSerializer(serializers.ModelSerializer):
-    password = serializers.CharField(write_only=True)
-    password2 = serializers.CharField(write_only=True, label="Confirm Password")
+    password = serializers.CharField(write_only=True, min_length=8, max_length=20)
+    password2 = serializers.CharField(write_only=True, max_length=20, label="Confirm Password")
     email = serializers.EmailField(required=True) ## override default model's blank = True so registration always need one.
 
     class Meta:
         model = User
         fields = ['username', 'email', 'password', 'password2']
 
+    def validate_password(self,value):
+        ## Runs AUTH_PASSWORD_VALIDATORS from settings.py to ensure password meets security requirements
+        ## MinimumLengthValidator default is 8, and similarity/common-password/all-numeric checks.
+        try:
+            django_validate_password(value)
+        except DjangoValidationError as e:
+            raise serializers.ValidationError(list(e.messages))
+
+        # custom regex validation (mix of letters and digits
+        if not re.search(r'[A-Za-z]', value) or not re.search(r'\d', value):
+            raise serializers.ValidationError("Password must contain at least one letter and one digit.")
+        return value
+
     def validate(self, attrs):
         if attrs['password'] != attrs['password2']:
-            raise serializers.ValidationError({"password": "Password fields didn't match."})
+            raise serializers.ValidationError({"password2": "Password fields didn't match."})
         return attrs
 
     def create(self, validated_data):
@@ -129,7 +146,7 @@ class RelationshipSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Select at least one context.")
 
         exists = Relationship.objects.filter(owner=request.user, target_user=target_user) ## Duplicate relationship check
-        
+
         if self.instance:
             exists = exists.exclude(pk=self.instance.pk)
         if exists.exists():

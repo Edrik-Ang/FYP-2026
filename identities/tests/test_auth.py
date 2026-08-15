@@ -23,7 +23,8 @@ class RegisterAPITests(APITestCase):
         response = self.client.post(self.url, {
             'username': 'newuser',
             'email': 'newuser@example.com', 
-            'password': 'testpass123'
+            'password': 'testpass123',
+            'password2': 'testpass123',
         })
         self.assertEqual(response.status_code, status.HTTP_201_CREATED) ## should return 201 Created
         self.assertIn('access', response.data)
@@ -34,7 +35,8 @@ class RegisterAPITests(APITestCase):
         self.client.post(self.url, {
             'username': 'newuser',
             'email': 'newuser@example.com',
-            'password': 'testpass123'
+            'password': 'testpass123',
+            'password2': 'testpass123',
         })
         user = User.objects.get(username='newuser')
         public_contexts = Context.objects.filter(owner=user, is_public_default=True)
@@ -46,14 +48,101 @@ class RegisterAPITests(APITestCase):
         response = self.client.post(self.url, {
             'username': 'existing',
             'email': 'other@example.com',
-            'password': 'testpass123'
+            'password': 'testpass123',
+            'password2': 'testpass123',
         })
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST) ## should return 400 Bad Request
 
     def test_register_rejects_missing_password(self):
-        response = self.client.post(self.url, {'username': 'incomplete'})
+        response = self.client.post(self.url, {'username': 'incomplete', 'email': 'incomplete@example.com',})
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST) ## should return 400 Bad Request
 
+    def test_register_rejects_missing_password2(self):
+        response = self.client.post(self.url, {
+            'username': 'incomplete',
+            'email': 'incomplete@example.com',
+            'password': 'testpass123'
+        })
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('password2', response.data)
+    
+    def test_register_rejects_mismatched_passwords(self):
+        response = self.client.post(self.url, {
+            'username': 'mismatcheduser',
+            'email': 'mismatched@example.com',
+            'password': 'testpass123',
+            'password2': 'differentpass123'
+        })
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('password2', response.data)
+        self.assertFalse(User.objects.filter(username='mismatcheduser').exists())
+
+    def test_register_rejects_password_under_8_chars(self):
+        response = self.client.post(self.url, {
+            'username': 'shortpassuser',
+            'email': 'shortpass@example.com',
+            'password': 'short',
+            'password2': 'short'
+        })
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('password', response.data)
+
+    def test_register_rejects_password_over_20_chars(self):
+        response = self.client.post(self.url, {
+            'username': 'longpassuser',
+            'email': 'longpass@example.com',
+            'password': 'Aa1' + ('a' * 21),
+            'password2': 'Aa1' + ('a' * 21),
+        })
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('password', response.data)
+
+    def test_register_rejects_password_without_a_letter(self):
+        response = self.client.post(self.url, {
+            'username': 'alldigituser',
+            'email': 'alldigit@example.com',
+            'password': '12345678',
+            'password2': '12345678'
+        })
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('password', response.data)
+
+    def test_register_rejects_password_without_a_digit(self):
+        response = self.client.post(self.url, {
+            'username': 'allletteruser',
+            'email': 'allletter@example.com',
+            'password': 'abcdefgh',
+            'password2': 'abcdefgh'
+        })
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('password', response.data)
+
+    def test_register_accepts_compliant_password(self): ## Sanity check for a password that meets all requirements
+        response = self.client.post(self.url, {
+            'username': 'compliantuser',
+            'email': 'compliant@example.com',
+            'password': ' Xk4mQz9pWr2',
+            'password2': ' Xk4mQz9pWr2'
+        })
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+    def test_register_password_is_hashed_and_login_works_after(self):
+        self.client.post(self.url, {
+            'username': 'regressionuser',
+            'email': 'regression@example.com',
+            'password': 'testpass123',
+            'password2': 'testpass123'
+        })
+        user = User.objects.get(username='regressionuser')
+        self.assertTrue(user.password.startswith('pbkdf2_sha256$')) ## check that the password is hashed
+        self.assertTrue(user.check_password('testpass123')) ## check that the password can be verified
+
+        login_response = self.client.post(reverse('api-login'), {
+            'username': 'regressionuser',
+            'password': 'testpass123',
+        })
+        self.assertEqual(login_response.status_code, status.HTTP_200_OK)
+        self.assertIn('access', login_response.data)
 
 class LoginAPITests(APITestCase):
     def setUp(self):
@@ -119,7 +208,12 @@ class TokenRefreshAPITests(APITestCase):
 
 class AuthServiceUnitTests(APITestCase):
     def test_register_user_creates_public_context_directly(self):
-        serializer = RegisterSerializer(data={'username': 'directuser', 'email': 'direct@gmail.com', 'password': 'testpass123'})
+        serializer = RegisterSerializer(data={
+            'username': 'directuser', 
+            'email': 'direct@gmail.com', 
+            'password': 'testpass123', 
+            'password2': 'testpass123',
+        })
         serializer.is_valid(raise_exception=True)
         user = AuthService.register_user(serializer)
         self.assertTrue(Context.objects.filter(owner=user, is_public_default=True).exists())
