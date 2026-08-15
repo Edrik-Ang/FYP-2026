@@ -11,12 +11,20 @@ User = get_user_model()
 ## Handles converting User instances to and from JSON, and creating new users (Password encryption is handled by Django's built-in create_user method).
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
+    password2 = serializers.CharField(write_only=True, label="Confirm Password")
+    email = serializers.EmailField(required=True) ## override default model's blank = True so registration always need one.
 
     class Meta:
         model = User
-        fields = ['username', 'email', 'password']
-    
+        fields = ['username', 'email', 'password', 'password2']
+
+    def validate(self, attrs):
+        if attrs['password'] != attrs['password2']:
+            raise serializers.ValidationError({"password": "Password fields didn't match."})
+        return attrs
+
     def create(self, validated_data):
+        validated_data.pop('password2')  ## remove password2 as it's not needed for user creation
         user = User.objects.create_user(**validated_data)
         Context.objects.create(owner=user, name='Public', is_public_default=True)  ## create default public context for new user
         return user
@@ -121,6 +129,7 @@ class RelationshipSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Select at least one context.")
 
         exists = Relationship.objects.filter(owner=request.user, target_user=target_user) ## Duplicate relationship check
+        
         if self.instance:
             exists = exists.exclude(pk=self.instance.pk)
         if exists.exists():
