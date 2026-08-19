@@ -6,7 +6,7 @@ import re
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password as django_validate_password
 from django.core.exceptions import ValidationError as DjangoValidationError
-from .models import Context, IdentityProfile, Relationship, DisclosureRule
+from .models import Context, IdentityProfile, LinkedAccount, Relationship, DisclosureRule
 from rest_framework import serializers
 
 User = get_user_model()
@@ -211,6 +211,10 @@ class DashboardSerializer(serializers.Serializer):
     stats = serializers.DictField()
     
 
-
+class LinkedAccountSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = LinkedAccount
+        fields = {'id', 'provider', 'provider_uid', 'raw_data', 'linked_at'}
+        read_only_fields = fields ## read only end to end, mutations handled by service layer, not serializer.
 
 ## Other serializers later (Steam , LinkedIn)

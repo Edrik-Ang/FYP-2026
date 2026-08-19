@@ -65,7 +65,12 @@ class DisclosureService:
         """
         if not viewer_contexts:
             return []
-        return list(DisclosureRule.objects.filter(identity=identity, context__in=viewer_contexts, is_visible=True).values_list('field_name', flat=True))
+        return list(
+            DisclosureRule.objects.filter(
+                identity=identity,
+                context__in=viewer_contexts, 
+                is_visible=True
+            ).values_list('field_name', flat=True))
 
 
     @staticmethod
