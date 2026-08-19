@@ -30,9 +30,6 @@ urlpatterns = [
 
     ## API for email verification (Later do)
 
-    ### APIs for relationships
-    ## /api/relationships/
-
     ### APIs for profiles
     ## GET /user/me own full profile
     ## PATCH /user/me update profile (partial update, not full replace)

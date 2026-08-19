@@ -1,7 +1,7 @@
 
 ## context_service.py file contains the business logic for Context API operations.
 ## includes methods for retrieving, creating, updating, and deleting contexts, with validation checks to ensure data integrity.
-from sqlite3 import IntegrityError
+from django.db import IntegrityError
 
 from identities.models import Context
 from rest_framework.exceptions import ValidationError
