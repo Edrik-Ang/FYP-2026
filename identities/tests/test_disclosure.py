@@ -325,3 +325,12 @@ class RelationshipPreviewAPITests(AuthenticatedAPITestCase):
         url = reverse('relationship-preview-api', kwargs={'pk': alice_relationship.pk})
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)  ## should return 404 Not Found
+
+# TODO:
+# list own rules --> 200
+# create rule --> 201
+# update visibility --> 200
+# delete rule --> 204
+# cannot use another user's identity or context --> 400
+# cannot use public context --> 400 
+# cannot retrieve another user's rule --> 404

@@ -184,6 +184,11 @@ class SteamService:
                 'appid': g.get('appid'),
                 'name': g.get('name'),
                 'playtime_forever': g.get('playtime_forever', 0),
+                'icon_url': g.get(
+                    f"https://media.steampowered.com/steamcommunity/public/images/apps/"
+                    f"{g.get('appid')}/{g.get('img_icon_url')}.jpg"
+                    if g.get('img_icon_url') else ''
+                ),
             } 
                 for g in data.get('games', [])
             ]
