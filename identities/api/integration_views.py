@@ -6,6 +6,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from identities.models import IdentityProfile, LinkedAccount
 from identities.services.identity_service import IdentityService
 from rest_framework.exceptions import ValidationError
+
 from identities.services.steam_service import SteamService
 
 STEAM_MATERIALIZE_FIELDS = ['summary', 'badges', 'owned_games', 'recent_games', 'wishlist']
@@ -28,7 +29,6 @@ def steam_callback_view(request):
         detail = e.detail[0] if isinstance(e.detail, list) else e.detail
         messages.error(request, f"Error linking Steam account: {detail}")
     return redirect("dashboard")
-
 
 @login_required
 def steam_unlink_view(request):
@@ -53,15 +53,17 @@ def steam_refresh_view(request):
 @login_required
 def steam_profile_view(request):
     """View to display Steam profile information for logged in user. 
-    Allow user to pick an identity by checkboxing which fields to materialize.
+    Allow user to pick  an identity by checkboxing which fields to materialize.
     """
     linked_account = get_object_or_404(LinkedAccount, user=request.user, provider='steam')
     identities = IdentityService.list_identities(request.user)
+
     if request.method == 'POST':
         identity = IdentityProfile.objects.filter(pk=request.POST.get('identity_id'), owner=request.user).first()
         if not identity:
             messages.error(request, "Please select a valid identity.")
             return redirect('steam-profile')
+        
         for field in request.POST.getlist('fields'):
             if field in STEAM_MATERIALIZE_FIELDS:
                 IdentityService.set_attribute(identity, key=field, value=linked_account.raw_data.get(field), source='steam')
@@ -72,9 +74,9 @@ def steam_profile_view(request):
         (identity, list(identity.attributes.filter(source='steam').values_list('key', flat=True)))
         for identity in identities
     ]
-    return render(request, 'identities/steam_profile.html', {
+
+    return render(request, 'identities/steam_profile.html',{
         'linked_account': linked_account,
         'identities': identities,
         'identity_steam_data': identity_steam_data,
     })
-

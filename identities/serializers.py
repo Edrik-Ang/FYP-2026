@@ -214,7 +214,7 @@ class DashboardSerializer(serializers.Serializer):
 class LinkedAccountSerializer(serializers.ModelSerializer):
     class Meta:
         model = LinkedAccount
-        fields = {'id', 'provider', 'provider_uid', 'raw_data', 'linked_at'}
+        fields = ['id', 'provider', 'provider_uid', 'raw_data', 'linked_at']
         read_only_fields = fields ## read only end to end, mutations handled by service layer, not serializer.
 
 ## Other serializers later (Steam , LinkedIn)
