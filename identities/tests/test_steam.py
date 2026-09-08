@@ -87,8 +87,8 @@ class SteamServiceFetchOwnedGamesTests(TestCase):
     def test_public_game_details_returns_sorted_games(self, mock_get):
         mock_get.return_value = Mock(status_code=200, json=lambda: {
             'response': {'game_count': 2, 'games': [
-                {'appid': 730, 'name': 'CS2', 'playtime_forever': 500, 'img_icon_url': 'a'},
-                {'appid': 570, 'name': 'Dota 2', 'playtime_forever': 100, 'img_icon_url': 'b'},
+                {'appid': 730, 'name': 'CS2', 'playtime_forever': 500, },
+                {'appid': 570, 'name': 'Dota 2', 'playtime_forever': 100, },
             ]}
         })
         result = SteamService._fetch_owned_games('765')
@@ -177,3 +177,59 @@ class SteamIntegrationAPITests(APITestCase):
         response = self.client.delete('/api/integrations/steam/')
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertFalse(LinkedAccount.objects.filter(user=self.user).exists())
+
+
+class SteamServiceAppNameLookupTests(TestCase):
+    def tearDown(self):
+        cache.delete('steam_app_name_lookup')
+
+    @patch('identities.services.steam_service.requests.get')
+    def test_single_page_builds_lookup(self, mock_get):
+        mock_get.return_value = Mock(status_code=200, json=lambda: {
+            'response': {
+                'apps': [{'appid': 10, 'name': 'Counter-Strike'}, {'appid': 20, 'name': 'Team Fortress Classic'}],
+                'have_more_results': False,
+            }
+        })
+        lookup = SteamService._get_app_name_lookup()
+        self.assertEqual(lookup[10], 'Counter-Strike')
+        self.assertEqual(mock_get.call_count, 1)
+
+    @patch('identities.services.steam_service.requests.get')
+    def test_pagination_continues_until_have_more_results_false(self, mock_get):
+        mock_get.side_effect = [
+            Mock(status_code=200, json=lambda: {
+                'response': {'apps': [{'appid': 10, 'name': 'Game A'}], 'have_more_results': True, 'last_appid': 10}
+            }),
+            Mock(status_code=200, json=lambda: {
+                'response': {'apps': [{'appid': 20, 'name': 'Game B'}], 'have_more_results': False}
+            }),
+        ]
+        lookup = SteamService._get_app_name_lookup()
+        self.assertEqual(lookup, {10: 'Game A', 20: 'Game B'})
+        self.assertEqual(mock_get.call_count, 2)
+
+    @patch('identities.services.steam_service.requests.get')
+    def test_second_page_uses_last_appid_from_first(self, mock_get):
+        mock_get.side_effect = [
+            Mock(status_code=200, json=lambda: {
+                'response': {'apps': [], 'have_more_results': True, 'last_appid': 999}
+            }),
+            Mock(status_code=200, json=lambda: {'response': {'apps': [], 'have_more_results': False}}),
+        ]
+        SteamService._get_app_name_lookup()
+        second_call_params = mock_get.call_args_list[1].kwargs['params']
+        self.assertEqual(second_call_params['last_appid'], 999)
+
+    @patch('identities.services.steam_service.requests.get', side_effect=Exception('network error'))
+    def test_failure_returns_empty_and_does_not_cache(self, mock_get):
+        lookup = SteamService._get_app_name_lookup()
+        self.assertEqual(lookup, {})
+        self.assertIsNone(cache.get('steam_app_name_lookup'))
+
+    @patch('identities.services.steam_service.requests.get')
+    def test_cached_lookup_skips_new_request_entirely(self, mock_get):
+        cache.set('steam_app_name_lookup', {5: 'Cached Game'}, 3600)
+        lookup = SteamService._get_app_name_lookup()
+        self.assertEqual(lookup, {5: 'Cached Game'})
+        mock_get.assert_not_called()
