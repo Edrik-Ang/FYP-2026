@@ -125,7 +125,7 @@ class GithubService:
                 user=user, 
                 provider='github',
                 defaults={
-                    'provider_uid':github_id,
+                    'provider_uid':str(github_id),
                     'access_token': access_token, 
                     'refresh_token': token_data.get('refresh_token'),
                     'token_expires_at': token_expires_at,
