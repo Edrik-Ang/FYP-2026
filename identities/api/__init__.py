@@ -5,3 +5,4 @@ from .relationship_views import RelationshipListCreateView, RelationshipDetailVi
 from .disclosure_views import DisclosureRuleListCreateView, DisclosureRuleDetailView
 from .profile_views import ProfileAPIView
 from .search_views import UserSearchAPIView
+from .api_steam import SteamAuthURLAPIView, SteamLinkedAccountAPIView, SteamRefreshAPIView, SteamMaterializeAPIView
