@@ -3,10 +3,13 @@
 ## refer to https://docs.github.com/en/developers/apps/building-oauth-apps/authorizing-oauth-apps for OAuth2 flow
 from urllib.parse import urlencode
 
+from django.db import IntegrityError
 from django.urls import reverse
 from django.conf import settings
 import requests
 import secrets
+from django.utils import timezone
+from datetime import timedelta
 from rest_framework.exceptions import ValidationError
 
 from identities.models import LinkedAccount
@@ -22,6 +25,7 @@ class GithubService:
         """ builds the Github's redirect URL for OAuth2 authorisation 
         and stash the anti-CSRF 'state' value in session. Steam Nonce equivalent basically.
         Returns a full URL to redirect user to GitHub for authorisation."""
+        url = "https://github.com/login/oauth/authorize"
         state = secrets.token_urlsafe(24)
         request.session['github_auth_state'] = state
         redirect_url = request.build_absolute_uri(reverse('github-callback'))
@@ -31,13 +35,14 @@ class GithubService:
             'scope': 'read:user',
             'state': state
         }
-        return f"https://github.com/login/oauth/authorize?{urlencode(params)}"
+        return f"{url}?{urlencode(params)}"
 
     @staticmethod
     def verify_callback(request):
         """ verifies the 'state' param against session (CSRF check), then exchanges the 'code' github sent back for access_token 
         return dict: {'access_token': 'refresh_token', 'expires_in'}. Raises ValidationError on any failure.
         """
+        url = "https://github.com/login/oauth/access_token"
         params = request.GET
         expected_state = request.session.pop('github_auth_state', None)
         if not expected_state or params.get('state') != expected_state:
@@ -48,7 +53,7 @@ class GithubService:
 
         redirect_uri = request.build_absolute_uri(reverse('github-callback'))
         response = requests.post(
-            "https://github.com/login/oauth/access_token",
+            url,
             data={
                 'client_id': settings.GITHUB_CLIENT_ID,
                 'client_secret': settings.GITHUB_CLIENT_SECRET,
@@ -65,3 +70,73 @@ class GithubService:
             raise ValidationError("Github could not verify this login attempt. Please try again.")
 
         return token_data
+
+    @staticmethod
+    def fetch_profile_data(access_token):
+        """ Uses access_token to fetch authenticated user public profile from Github's /user endpoint. 
+        Returns the fields of interest, 'id' and 'login' (needed for provider_uid, not for disclosure.)"""
+        url = "https://api.github.com/user"
+        response = requests.get(
+            url,
+            headers={
+                'Authorization': f"Bearer {access_token}",
+                "Accept": "application/vnd.github.v3+json"
+            },
+            timeout=10, ## timeout after 10 seconds, to avoid hanging the request
+        )
+        response.raise_for_status()
+        data = response.json()
+
+        return{ ## will be the profile data stored in LinkedAccount.raw_data, but only the fields we care about for now.
+            'id': data.get('id',''),
+            'login': data.get('login',''),
+            'avatar_url': data.get('avatar_url',''),
+            'html_url': data.get('html_url',''),
+            'name': data.get('name',''),
+            'bio': data.get('bio',''),
+            'company': data.get('company',''),
+            'location': data.get('location',''),
+            'blog': data.get('blog',''),
+            'public_repos': data.get('public_repos',''),
+            'followers': data.get('followers',''),
+            'following': data.get('following',''),
+            'created_at': data.get('created_at',''),
+        }
+
+    @staticmethod
+    def link_github_account(user, token_data):
+        """ Links a verified Github account to currently logged in user's LinkedAccount. Takes the token rict from verify_callback, 
+        fetches profile data to get stable provider_uid, ('id' in github), and stores access_token/refresh_token/expiry with it.
+        Returns the LinkedAccount instance for Github.
+        Raises validationError if this Github account already linked to another user, or if the user already has a linked Github account."""
+        access_token = token_data.get('access_token')
+        profile = GithubService.fetch_profile_data(access_token)
+        github_id = profile.get('id') ## better since login can change, but id is stable. will use this as provider_uid in LinkedAccount.
+
+        if not github_id:
+            raise ValidationError("Couldnt get Github profile, please try again.")
+
+        existing = LinkedAccount.objects.filter(provider='github', provider_uid=github_id)
+        if existing and existing.user_id != user.id:
+            raise ValidationError("This Github account is already linked to another user.")
+
+        expires_in = token_data.get('expires_in')
+        token_expires_at = (
+            timezone.now() + timedelta(seconds=expires_in) if expires_in else None
+        )
+        try: 
+            account, _ = LinkedAccount.objects.update_or_create(
+                user=user, 
+                provider='github',
+                defaults={
+                    'provider_uid':github_id,
+                    'access_token': access_token, 
+                    'refresh_token': token_data.get('refresh_token'),
+                    'token_expires_at': token_expires_at,
+                    'raw_data': profile,
+                },
+            )
+        except IntegrityError:
+            raise ValidationError("This user already has a linked Github account.")\
+            
+        return account
