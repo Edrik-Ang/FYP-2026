@@ -89,7 +89,7 @@ class DisclosureRule(models.Model):
 class IdentityAttribute(models.Model):
     identity = models.ForeignKey(IdentityProfile, on_delete=models.CASCADE, related_name='attributes')
     key = models.CharField(max_length=100) ## 'recent activity', 'experience', 'education', ... 
-    value = models.JSONField() ## store string, list of dicts, whatever the platform from Steam and LinkedIN API provides.
+    value = models.JSONField(null=True) # was: models.JSONField()
     source = models.CharField(max_length=50, blank=True) ## Steam, LinkedIn, others
     created_at = models.DateTimeField(auto_now_add=True)
 

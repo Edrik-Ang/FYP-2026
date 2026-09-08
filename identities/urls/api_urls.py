@@ -12,6 +12,7 @@ from ..api import (
     SteamAuthURLAPIView, SteamLinkedAccountAPIView, SteamRefreshAPIView, SteamMaterializeAPIView
 )
 from ..api.dashboard_views import DashBoardAPIView
+from ..api.api_github import GithubMaterialAPIView
 
 
 urlpatterns = [
@@ -71,9 +72,14 @@ urlpatterns = [
     path('profile/<str:username>/', ProfileAPIView.as_view(), name='profile-api'),
     path('users/', UserSearchAPIView.as_view(), name='user-search-api'),
 
+    # Steam Integration APIs
     path('integrations/steam/auth-url/', SteamAuthURLAPIView.as_view(), name='steam-auth-url-api'),
     path('integrations/steam/', SteamLinkedAccountAPIView.as_view(), name='steam-linked-account-api'),
     path('integrations/steam/refresh/', SteamRefreshAPIView.as_view(), name='steam-refresh-api'),
-    path('integrations/steam/materialize/', SteamMaterializeAPIView.as_view(), name='steam-materialize-api')
+    path('integrations/steam/materialize/', SteamMaterializeAPIView.as_view(), name='steam-materialize-api'),
+
+    # Github Integration APIs
+    path('integrations/github/materialize/', GithubMaterialAPIView.as_view(), name='github-materialize-api')
+
 
 ]

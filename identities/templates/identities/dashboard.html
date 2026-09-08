@@ -82,6 +82,7 @@
     <!-- Linked Accounts -->
     <section class="mb-10">
         <h2 class="text-lg font-semibold mb-3">Linked Accounts</h2>
+
         <div class="bg-white rounded-lg shadow-sm p-4">
             <p class="font-semibold mb-2">Steam</p>
             {% if linked_accounts.steam %}
@@ -117,6 +118,42 @@
                 </div>
             {% else %}
                 <p class="text-sm text-gray-500">Not linked — <a href="{% url 'steam-link' %}" class="text-blue-600 hover:underline">Link Steam</a></p>
+            {% endif %}
+        </div>
+
+        <div class="bg-white rounded-lg shadow-sm p-4 mt-4">
+            <p class="font-semibold mb-2">GitHub</p>
+            {% if linked_accounts.github %}
+                <div class="flex items-center gap-3 mb-2">
+                    {% if linked_accounts.github.raw_data.avatar_url %}
+                        <img src="{{ linked_accounts.github.raw_data.avatar_url }}" alt="GitHub avatar" class="w-12 h-12 rounded">
+                    {% endif %}
+                    <div>
+                        <p class="font-medium">{{ linked_accounts.github.raw_data.name|default:linked_accounts.github.raw_data.login }}</p>
+                        <p class="text-xs text-gray-500">@{{ linked_accounts.github.raw_data.login }}</p>
+                    </div>
+                </div>
+                {% if linked_accounts.github.raw_data.bio %}
+                    <p class="text-sm italic text-gray-600 mb-3">{{ linked_accounts.github.raw_data.bio }}</p>
+                {% else %}
+                    <p class="text-sm italic text-gray-400 mb-3">No bio set.</p>
+                {% endif %}
+                <div class="flex gap-2">
+                    <form method="post" action="{% url 'github-refresh' %}">
+                        {% csrf_token %}
+                        <button type="submit" class="text-sm px-3 py-1.5 rounded border border-gray-300 hover:bg-gray-100">Refresh GitHub data</button>
+                    </form>
+                    <form method="post" action="{% url 'github-unlink' %}">
+                        {% csrf_token %}
+                        <button type="submit" class="text-sm px-3 py-1.5 rounded border border-red-300 text-red-600 hover:bg-red-50">Unlink</button>
+                    </form>
+                    <form method="post" action="{% url 'github-profile' %}">
+                        {% csrf_token %}
+                        <button type="submit" class="text-sm px-3 py-1.5 rounded bg-blue-600 text-white hover:bg-blue-700">View GitHub profile</button>
+                    </form>
+                </div>
+            {% else %}
+                <p class="text-sm text-gray-500">Not linked — <a href="{% url 'github-link' %}" class="text-blue-600 hover:underline">Link GitHub</a></p>
             {% endif %}
         </div>
     </section>

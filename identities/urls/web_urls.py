@@ -5,7 +5,7 @@ from django.urls import path
 
 from identities.views.context_views import context_create_view, context_delete_view, context_edit_view, context_list_view
 from identities.views.disclosure_views import disclosure_rule_create_view, disclosure_rule_delete_view, disclosure_rule_edit_view, disclosure_rule_list_view
-from identities.views.github_views import github_callback_view, github_link_view
+from identities.views.github_views import github_callback_view, github_link_view, github_unlink_view
 from identities.views.identity_views import identity_create_view, identity_delete_view, identity_edit_view, identity_list_view, public_profile_view
 from identities.views.steam_views import steam_callback_view, steam_profile_view, steam_refresh_view, steam_unlink_view, steam_link_view
 from identities.views.relationship_views import relationship_create_view, relationship_delete_view, relationship_delete_view, relationship_edit_view, relationship_list_view, relationship_preview_view
@@ -13,6 +13,10 @@ from ..views import (
     home_view, dashboard_view, profile_view, profile_redirect_view,
     WebLoginView, WebLogoutView, register_view,
 )
+from identities.views.github_views import (
+    github_profile_view, github_refresh_view, github_unlink_view, github_link_view, github_callback_view
+)
+
 
 urlpatterns = [
     path('', home_view, name='home'),
@@ -66,5 +70,8 @@ urlpatterns = [
 
     # Github Integration 
     path('integrations/github/link/', github_link_view, name='github-link'),
-    path('integrations/github/callback/', github_callback_view, name='github-callback')
+    path('integrations/github/callback/', github_callback_view, name='github-callback'),
+    path('integrations/github/unlink/', github_unlink_view, name='github-unlink'),
+    path('integrations/github/refresh/', github_refresh_view, name='github-refresh'),
+    path('integrations/github/profile/', github_profile_view, name='github-profile'),
 ]
