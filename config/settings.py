@@ -29,7 +29,7 @@ SECRET_KEY = "django-insecure-ldgz$o+o51u+rv_8i^$=4y!c6^mi(*n&ld6i7_v4$+*mt*urc+
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["localhost", "127.0.0.1"]
 
 
 # Application definition
@@ -90,6 +90,8 @@ LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'dashboard'
 LOGOUT_REDIRECT_URL = 'login'
 STEAM_API_KEY = os.getenv("STEAM_API_KEY", "")
+GITHUB_CLIENT_ID = os.getenv("GITHUB_CLIENT_ID", "")
+GITHUB_CLIENT_SECRET = os.getenv("GITHUB_CLIENT_SECRET", "")
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
