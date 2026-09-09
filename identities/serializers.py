@@ -16,7 +16,8 @@ User = get_user_model()
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, min_length=8, max_length=20)
     password2 = serializers.CharField(write_only=True, max_length=20, label="Confirm Password")
-    email = serializers.EmailField(required=True) ## override default model's blank = True so registration always need one.
+    email = serializers.EmailField(
+        required=True) 
 
     class Meta:
         model = User

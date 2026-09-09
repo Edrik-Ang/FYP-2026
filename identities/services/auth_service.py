@@ -3,6 +3,7 @@
 
 from django.contrib.auth import authenticate
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.token_blacklist.models import OutstandingToken, BlacklistedToken
 
 class AuthService:
     @staticmethod
@@ -31,3 +32,11 @@ class AuthService:
     def blacklist_refresh_token(refresh_token):
         """Raise TokenError on invalid/expired token, caller(view) left to translate into HTTP response"""
         RefreshToken(refresh_token).blacklist()
+
+    @staticmethod
+    def blacklist_all_tokens_for_user(user):
+        """Revoke every outstanding refresh token for a user, Used on password reset,
+        where dont have a single token to blacklist , but want all sessions dead."""
+        for token in OutstandingToken.objects.filter(user=user):
+            BlacklistedToken.objects.get_or_create(token=token)
+            

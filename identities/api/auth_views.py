@@ -8,15 +8,19 @@ from rest_framework_simplejwt.exceptions import TokenError
 
 from ..serializers import RegisterSerializer
 from ..services.auth_service import AuthService
+from rest_framework.throttling import AnonRateThrottle
 
 User = get_user_model()
 
+class RegisterRateThrottle(AnonRateThrottle):
+    scope = 'register'
 
 class RegisterAPIView(generics.CreateAPIView):
     """POST /api/auth/register/ - create a new user (+ default public context), returns an auth token."""
     queryset = User.objects.all()
     serializer_class = RegisterSerializer
     permission_classes = [AllowAny]
+    throttle_classes = [RegisterRateThrottle]
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)

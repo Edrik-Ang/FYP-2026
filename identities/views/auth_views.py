@@ -1,7 +1,7 @@
 ## auth_views.py file handles the authentication views for login, registration, and logout functionality.
 from django.shortcuts import render, redirect
 from django.contrib.auth import login
-from django.contrib.auth.views import LoginView, LogoutView
+from django.contrib.auth.views import LoginView, LogoutView, PasswordResetConfirmView
 from django.urls import reverse_lazy
 from ..serializers import RegisterSerializer
 from ..services.auth_service import AuthService
@@ -25,3 +25,12 @@ def register_view(request):
             return redirect('dashboard')
         return render(request, 'identities/register.html', {'errors': serializer.errors})
     return render(request, 'identities/register.html')
+
+
+class WebPasswordResetConfirmView(PasswordResetConfirmView):
+    template_name = 'registration/password_reset_confirm.html'
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        AuthService.blacklist_all_tokens_for_user(self.user)
+        return response

@@ -2,12 +2,19 @@
 ## covers both the web facing and api facing auth endpoints, since they share the same underlying logic and services.
 
 from django.contrib.auth import get_user_model
+from django.contrib.auth.tokens import default_token_generator
+from django.utils.http import urlsafe_base64_encode
+from django.utils.encoding import force_bytes
+from django.test import TestCase
 from django.urls import reverse
 from identities.serializers import RegisterSerializer
 from identities.services.auth_service import AuthService
 from rest_framework import status
 from rest_framework.test import APITestCase
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken, OutstandingToken
+from django_rest_passwordreset.signals import post_password_reset
+from django.core.cache import cache
 
 from identities.models import Context
 
@@ -17,6 +24,7 @@ User = get_user_model()
 
 class RegisterAPITests(APITestCase):
     def setUp(self):
+        cache.clear()
         self.url = reverse('api-register')
 
     def test_register_creates_user_and_returns_tokens(self): ## test for new user registration and token generation
@@ -224,3 +232,107 @@ class AuthenticationPermissionTests(APITestCase):
         url = reverse('context-list-create-api')
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED) ## should return 401 Unauthorized
+
+
+class PasswordResetTokenBlackListTests(APITestCase):
+    """ Covers API-side path: django-rest-passwordreset's post_password_reset
+    signal should blacklist all outstanding refresh token for that user."""
+    def setUp(self):
+        self.user = User.objects.create_user(username='resetuser', password='oldpass123')
+        self.other_user = User.objects.create_user(username='otheruser', password='otherpass123')
+        self.refresh1 = RefreshToken.for_user(self.user)
+        self.refresh2 = RefreshToken.for_user(self.user)
+        self.other_refresh = RefreshToken.for_user(self.other_user)
+
+    def test_post_password_reset_signal_blacklists_all_user_tokens(self):
+        ## simulate what django-rest-passwordreset does internally after a successful reset
+        post_password_reset.send(sender=self.__class__, user=self.user)
+
+        self.assertEqual(
+            BlacklistedToken.objects.filter(token__user=self.user).count(), 2
+        )
+
+    def test_post_password_reset_signal_does_not_touch_other_users(self):
+        post_password_reset.send(sender=self.__class__, user=self.user)
+
+        self.assertEqual(
+            BlacklistedToken.objects.filter(token__user=self.other_user).count(), 0
+        )
+
+    def test_blacklisted_token_after_reset_cannot_refresh(self):
+        post_password_reset.send(sender=self.__class__, user=self.user)
+
+        refresh_url = reverse('api-token-refresh')
+        response = self.client.post(refresh_url, {'refresh': str(self.refresh1)})
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+
+class WebPasswordResetConfirmTests(TestCase):
+    """Covers the web-facing path: WebPasswordResetConfirmView.form_valid should
+    blacklist all outstanding tokens once the new password is set."""
+
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username='webresetuser', email='webreset@example.com', password='oldpass123'
+        )
+        self.refresh = RefreshToken.for_user(self.user)
+        self.uid = urlsafe_base64_encode(force_bytes(self.user.pk))
+        self.token = default_token_generator.make_token(self.user)
+
+
+    def test_successful_web_reset_blacklists_outstanding_tokens(self):
+        ## Django's PasswordResetConfirmView needs a GET first to swap the URL token
+        ## for a session-stored "set-password" token -- this mirrors the real link-click flow
+        confirm_url = reverse('password_reset_confirm', kwargs={'uidb64': self.uid, 'token': self.token})
+        response = self.client.get(confirm_url, follow=True)
+        real_confirm_url = response.redirect_chain[-1][0] if response.redirect_chain else confirm_url
+
+        self.client.post(real_confirm_url, {
+            'new_password1': 'brandnewpass456',
+            'new_password2': 'brandnewpass456',
+        })
+
+        self.assertEqual(
+            BlacklistedToken.objects.filter(token__user=self.user).count(), 1
+        )
+
+
+    def test_password_actually_changed_alongside_blacklist(self):
+        confirm_url = reverse('password_reset_confirm', kwargs={'uidb64': self.uid, 'token': self.token})
+        response = self.client.get(confirm_url, follow=True)
+        real_confirm_url = response.redirect_chain[-1][0] if response.redirect_chain else confirm_url
+
+        self.client.post(real_confirm_url, {
+            'new_password1': 'brandnewpass456',
+            'new_password2': 'brandnewpass456',
+        })
+
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.check_password('brandnewpass456'))
+
+
+class RegisterAPIRatelimitTests(APITestCase):
+    def setUp(self):
+        cache.clear()  ## throttle state lives in cache, not the DB -- must reset per test
+
+    def tearDown(self):
+        cache.clear()  ## avoid leaking into whatever test runs next
+
+    def test_sixth_api_registration_attempt_in_hour_is_blocked(self):
+        url = reverse('api-register')
+        for i in range(5):
+            response = self.client.post(url, {
+                'username': f'apispam{i}',
+                'email': f'apispam{i}@example.com',
+                'password': 'Str0ngPassw0rd',
+                'password2': 'Str0ngPassw0rd',
+            })
+            self.assertEqual(response.status_code, status.HTTP_201_CREATED, f"attempt {i} should succeed")
+
+        response = self.client.post(url, {
+            'username': 'apispam5',
+            'email': 'apispam5@example.com',
+            'password': 'Str0ngPassw0rd',
+            'password2': 'Str0ngPassw0rd',
+        })
+        self.assertEqual(response.status_code, status.HTTP_429_TOO_MANY_REQUESTS)

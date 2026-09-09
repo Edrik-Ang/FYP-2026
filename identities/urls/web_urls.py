@@ -11,7 +11,7 @@ from identities.views.steam_views import steam_callback_view, steam_profile_view
 from identities.views.relationship_views import relationship_create_view, relationship_delete_view, relationship_delete_view, relationship_edit_view, relationship_list_view, relationship_preview_view
 from ..views import (
     home_view, dashboard_view, profile_view, profile_redirect_view,
-    WebLoginView, WebLogoutView, register_view,
+    WebLoginView, WebLogoutView, register_view, WebPasswordResetConfirmView,
 )
 from identities.views.github_views import (
     github_profile_view, github_refresh_view, github_unlink_view, github_link_view, github_callback_view
@@ -31,7 +31,7 @@ urlpatterns = [
     # Web-facing password reset )
     path('password-reset/', django_auth_views.PasswordResetView.as_view(template_name='registration/password_reset_form.html'), name='password_reset'),
     path('password-reset/done/', django_auth_views.PasswordResetDoneView.as_view(template_name='registration/password_reset_done.html'), name='password_reset_done'),
-    path('reset/<uidb64>/<token>/', django_auth_views.PasswordResetConfirmView.as_view(template_name='registration/password_reset_confirm.html'), name='password_reset_confirm'),
+    path('reset/<uidb64>/<token>/', WebPasswordResetConfirmView.as_view(), name='password_reset_confirm'),
     path('reset/done/', django_auth_views.PasswordResetCompleteView.as_view(template_name='registration/password_reset_complete.html'), name='password_reset_complete'),
 
     ## contexts urls

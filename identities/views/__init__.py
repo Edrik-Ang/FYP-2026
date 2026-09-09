@@ -1,5 +1,5 @@
 from .views import home_view, dashboard_view, profile_redirect_view, profile_view
-from .auth_views import WebLoginView, WebLogoutView, register_view
+from .auth_views import WebLoginView, WebLogoutView, register_view, WebPasswordResetConfirmView
 from .context_views import (
     context_list_view, context_create_view, context_delete_view, context_edit_view)
 from .identity_views import (identity_list_view, identity_create_view, identity_edit_view, identity_delete_view, public_profile_view)

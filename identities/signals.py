@@ -4,7 +4,8 @@ from django.template.loader import render_to_string
 from django.urls import reverse
 from django.conf import settings
 
-from django_rest_passwordreset.signals import reset_password_token_created
+from django_rest_passwordreset.signals import reset_password_token_created, post_password_reset
+from .services.auth_service import AuthService
 
 
 @receiver(reset_password_token_created)
@@ -30,3 +31,9 @@ def password_reset_token_created(sender, instance, reset_password_token, *args, 
     )
     msg.attach_alternative(email_html_message, "text/html")
     msg.send()
+
+
+@receiver(post_password_reset)
+def password_reset_post(sender, user, *args, **kwargs):
+    """ After successful password reset, blacklist all outstanding refresh tokens for the user to log them out of all sessions. """
+    AuthService.blacklist_all_tokens_for_user(user)

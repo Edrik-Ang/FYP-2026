@@ -77,6 +77,7 @@ REST_FRAMEWORK = {
 
     'DEFAULT_THROTTLE_RATES': {
         "django-rest-passwordreset-request-token": "5/hour",  # Limit password reset requests to 5 per hour per user
+        "register": "5/hour",
     },
 }
 
