@@ -29,8 +29,7 @@ load_dotenv()
 SECRET_KEY = os.environ["SECRET_KEY"]
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
-
+DEBUG = os.environ.get("DEBUG", "False") == "True"
 ALLOWED_HOSTS = ["localhost", "127.0.0.1"]
 
 
@@ -184,3 +183,26 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 
 FIELD_ENCRYPTION_KEY = os.environ["FIELD_ENCRYPTION_KEY"].encode()
+
+
+# settings.py
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': 'WARNING',
+    },
+    'loggers': {
+        'identities': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+    },
+}

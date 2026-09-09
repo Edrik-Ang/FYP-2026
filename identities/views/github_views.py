@@ -3,12 +3,12 @@
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
 from django.contrib import messages
-from rest_framework.exceptions import ValidationError
 
 from identities.models import IdentityProfile, LinkedAccount
 from identities.services.github_service import GITHUB_MATERIALIZE_FIELDS, GithubService
 from identities.services.identity_service import IdentityService
 
+from identities.security.error_handling import handle_integration_errors
 
 @login_required
 def github_link_view(request):
@@ -17,19 +17,12 @@ def github_link_view(request):
 
 
 @login_required
+@handle_integration_errors('dashboard', 'Github') ## updated to use the decorator for error handling
 def github_callback_view(request):
     """View to handle callback from Github after user authorization. """
-    try:
-        token_data = GithubService.verify_callback(request)
-        GithubService.link_github_account(request.user, token_data)
-        messages.success(request, "Github account linked successfully.")
-    except ValidationError as e:
-        # Validation errors may contain either one message or a list of messages.
-        if isinstance(e.detail, list):
-            detail = e.detail[0]
-        else:
-            detail = e.detail
-        messages.error(request, f"Error linking Github account: {detail}")
+    token_data = GithubService.verify_callback(request)
+    GithubService.link_github_account(request.user, token_data)
+    messages.success(request, "Github account linked successfully.")
     return redirect('dashboard')
 
 @login_required
@@ -72,13 +65,10 @@ def github_unlink_view(request):
 
 
 @login_required
+@handle_integration_errors('dashboard', 'Github') ## updated to use the decorator for error handling
 def github_refresh_view(request):
     """view to refresh Github access token for logged-in user."""
     if request.method == 'POST':
-        try:
-            GithubService.refresh_github_token(request.user)
-            messages.success(request, "Github access token refreshed successfully.")
-        except ValidationError as e:
-            detail = e.detail[0] if isinstance(e.detail, list) else e.detail
-            messages.error(request, str(detail))
+        GithubService.refresh_github_token(request.user)
+        messages.success(request, "Github access token refreshed successfully.")
     return redirect('dashboard')

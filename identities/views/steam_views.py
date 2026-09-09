@@ -1,11 +1,11 @@
-### integration_views.py handles the web facing side of Steam integration, including login and callback views for linking Steam accounts to user profiles.
+### steam_views.py handles the web facing side of Steam integration, including login and callback views for linking Steam accounts to user profiles.
 ## If other integration views are added in the future, they will expand this file or be split into their own files as needed.
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
 from identities.models import IdentityProfile, LinkedAccount
 from identities.services.identity_service import IdentityService
-from rest_framework.exceptions import ValidationError
+from identities.security.error_handling import handle_integration_errors
 
 from identities.services.steam_service import SteamService
 
@@ -19,15 +19,12 @@ def steam_link_view(request):
 
 
 @login_required
+@handle_integration_errors('dashboard', 'Steam')  # Use the decorator for error handling
 def steam_callback_view(request):
     """View to handle the callback verification from Steam after user authentication."""
-    try:
-        steam_id64 = SteamService.verify_callback(request)
-        SteamService.link_steam_account(request.user, steam_id64)
-        messages.success(request, "Steam account linked successfully.")
-    except ValidationError as e:
-        detail = e.detail[0] if isinstance(e.detail, list) else e.detail
-        messages.error(request, f"Error linking Steam account: {detail}")
+    steam_id64 = SteamService.verify_callback(request)
+    SteamService.link_steam_account(request.user, steam_id64)
+    messages.success(request, "Steam account linked successfully.")
     return redirect("dashboard")
 
 @login_required
@@ -40,13 +37,11 @@ def steam_unlink_view(request):
 
 
 @login_required
+@handle_integration_errors('dashboard', 'Steam')  # Use the decorator for error handling
 def steam_refresh_view(request):
     if request.method == "POST":
-        try:
-            SteamService.refresh_player_data(request.user)
-            messages.success(request, "Steam player data refreshed successfully.")
-        except ValidationError as e:
-            messages.error(request, str(e.detail[0] if isinstance(e.detail, list) else e.detail))
+        SteamService.refresh_player_data(request.user)
+        messages.success(request, "Steam player data refreshed successfully.")
     return redirect("dashboard")
 
 
