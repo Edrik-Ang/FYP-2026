@@ -5,6 +5,7 @@ from django.contrib.auth.views import LoginView, LogoutView
 from django.urls import reverse_lazy
 from ..serializers import RegisterSerializer
 from ..services.auth_service import AuthService
+from django_ratelimit.decorators import ratelimit
 
 class WebLoginView(LoginView):
     template_name = 'identities/login.html'
@@ -14,13 +15,13 @@ class WebLoginView(LoginView):
 class WebLogoutView(LogoutView):
     next_page = reverse_lazy('login')
 
-
+@ratelimit(key='ip', rate='5/h', method='POST', block=True)
 def register_view(request):
     if request.method == 'POST':
         serializer = RegisterSerializer(data=request.POST)
         if serializer.is_valid():
             user = AuthService.register_user(serializer)
-            login(request, user) ## uses Django's built in login function to log user in after registration
+            login(request, user, backend='django.contrib.auth.backends.ModelBackend') ## uses Django's built in login function to log user in after registration
             return redirect('dashboard')
         return render(request, 'identities/register.html', {'errors': serializer.errors})
     return render(request, 'identities/register.html')
