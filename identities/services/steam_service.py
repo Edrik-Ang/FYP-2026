@@ -10,6 +10,7 @@ from django.conf import settings
 from django.core.cache import cache
 
 from identities.models import LinkedAccount
+from identities.security.provider_response_errors import raise_for_provider_response, raise_for_network_error
 ## all these only work if the account linked is public, otherwise the API returns empty data.
 STEAM_OPENID_URL = "https://steamcommunity.com/openid/login"
 STEAM_CLAIMED_ID_PREFIX = "https://steamcommunity.com/openid/id/"
@@ -128,11 +129,16 @@ class SteamService:
         Uses Official ISteamUser /GetPlayerSummaries endpoint. summary (about me) is not part of this response 
         -- fetched separately using Steam's unoffical XML profile feed and best-effort parsing. (empty string on failure)
         """
-        response = requests.get(STEAM_PLAYER_SUMMARY_URL, params={
-            'key': settings.STEAM_API_KEY,
-            'steamids': steamid64,
+        try:
+            
+            response = requests.get(STEAM_PLAYER_SUMMARY_URL, params={
+                'key': settings.STEAM_API_KEY,
+                'steamids': steamid64,
         }, timeout=10)
-        response.raise_for_status()
+        except requests.RequestException as e:
+            raise_for_network_error(e, "Steam", context="GetPlayerSummaries")
+
+        raise_for_provider_response(response, "Steam", context="GetPlayerSummaries")
         players = response.json().get('response', {}).get('players', [])
         if not players:
             raise ValidationError("Steam profile not found or private.")

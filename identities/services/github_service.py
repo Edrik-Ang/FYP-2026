@@ -13,6 +13,8 @@ from datetime import timedelta
 from rest_framework.exceptions import ValidationError
 
 from identities.models import LinkedAccount
+from identities.security.provider_response_errors import raise_for_network_error, raise_for_provider_response
+
 
 GITHUB_MATERIALIZE_FIELDS = ['login', 'name', 'avatar_url', 'html_url', 'bio', 'company', 'location']
 
@@ -52,18 +54,21 @@ class GithubService:
             raise ValidationError("Github login was not completed successfully. Please try again")
 
         redirect_uri = request.build_absolute_uri(reverse('github-callback'))
-        response = requests.post(
-            "https://github.com/login/oauth/access_token",
-            data={
-                'client_id': settings.GITHUB_CLIENT_ID,
-                'client_secret': settings.GITHUB_CLIENT_SECRET,
-                'code': code,
-                'redirect_uri': redirect_uri,
-            },
-            headers={'Accept': 'application/json'},
-            timeout=10,
-        )
-        response.raise_for_status()
+        try:
+            response = requests.post(
+                "https://github.com/login/oauth/access_token",
+                data={
+                    'client_id': settings.GITHUB_CLIENT_ID,
+                    'client_secret': settings.GITHUB_CLIENT_SECRET,
+                    'code': code,
+                    'redirect_uri': redirect_uri,
+                },
+                headers={'Accept': 'application/json'},
+                timeout=10,
+            )
+        except requests.RequestException as e:
+            raise_for_network_error(e, "Github", context="access_token exchange")
+        raise_for_provider_response(response, "Github", context="access_token exchange")
         token_data = response.json()
 
         if 'access_token' not in token_data:
@@ -85,10 +90,11 @@ class GithubService:
                 },
                 timeout=10, ## timeout after 10 seconds, to avoid hanging the request
             )
-            response.raise_for_status()
-            data = response.json()
-        except requests.RequestException:
-            raise ValidationError("Unable to retrieve your Github profile. Please try again.")
+        except requests.RequestException as e:
+            raise_for_network_error(e, "Github", context="/user")
+
+        raise_for_provider_response(response, "Github", context="/user")
+        data = response.json()
 
         return{ ## will be the profile data stored in LinkedAccount.raw_data, but only the fields we care about for now.
             'id': data.get('id'), 
