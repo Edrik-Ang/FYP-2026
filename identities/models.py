@@ -3,6 +3,7 @@
 
 from django.db import models
 from django.conf import settings
+from .security.token_encryption import EncryptedCharField
 
 ## Context class encompasses user-defined labels, e.g employers, Cafe-friends, Colleagues, etc
 ## user use these labels to categorize their own IdentityProfiles and to tag relationships with other users.
@@ -109,8 +110,8 @@ class LinkedAccount(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='linked_accounts')
     provider = models.CharField(max_length=32) # e.g 'steam', 'linkedin', 'reddit'
     provider_uid = models.CharField(max_length=255) # SteamID64, etc
-    access_token = models.CharField(max_length=512, blank=True, null=True) # Not used for Steam
-    refresh_token = models.CharField(max_length=512, blank=True, null=True) # Not used for Steam
+    access_token = EncryptedCharField(max_length=512, blank=True, null=True) # Not used for Steam
+    refresh_token = EncryptedCharField(max_length=512, blank=True, null=True) # Not used for Steam
     token_expires_at = models.DateTimeField(blank=True, null=True) # Not used for Steam
 
     raw_data = models.JSONField(default=dict, blank=True)

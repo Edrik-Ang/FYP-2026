@@ -17,4 +17,4 @@ admin.site.register(LinkedAccount)
 
 ## postgresql: 
 ## login: postgres
-## password: password
+## password: 1234
