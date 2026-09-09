@@ -8,6 +8,7 @@ from django.contrib.auth.password_validation import validate_password as django_
 from django.core.exceptions import ValidationError as DjangoValidationError
 from .models import Context, IdentityProfile, LinkedAccount, Relationship, DisclosureRule
 from rest_framework import serializers
+from rest_framework.validators import UniqueValidator 
 
 User = get_user_model()
 
@@ -17,7 +18,8 @@ class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, min_length=8, max_length=20)
     password2 = serializers.CharField(write_only=True, max_length=20, label="Confirm Password")
     email = serializers.EmailField(
-        required=True) 
+        required=True,
+        validators=[UniqueValidator(queryset=User.objects.all(), message="This email is already in use.")]) 
 
     class Meta:
         model = User

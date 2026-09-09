@@ -152,6 +152,17 @@ class RegisterAPITests(APITestCase):
         self.assertEqual(login_response.status_code, status.HTTP_200_OK)
         self.assertIn('access', login_response.data)
 
+    def test_register_rejects_duplicate_email(self):
+        User.objects.create_user(username='original', email='shared@example.com', password='testpass123')
+        response = self.client.post(self.url, {
+            'username': 'differentusername',
+            'email': 'shared@example.com',
+            'password': 'testpass123',
+            'password2': 'testpass123',
+        })
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('email', response.data)
+
 class LoginAPITests(APITestCase):
     def setUp(self):
         self.url = reverse('api-login')
