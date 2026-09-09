@@ -7,8 +7,10 @@ click==8.4.2
 colorama==0.4.6
 cryptography==50.0.1
 Django==5.2.15
+django-axes==8.3.1
 django-cors-headers==4.9.0
 django-filter==25.2
+django-ratelimit==4.1.0
 django-rest-passwordreset==1.6.0
 django-tailwind-cli==4.6.2
 django-typer==3.8.0
