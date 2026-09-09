@@ -1,12 +1,14 @@
 # identities/api/disclosure_views.py
 from identities.services.disclosure_service import DisclosureService
 from rest_framework import generics
+from rest_framework.permissions import IsAuthenticated
 
 from ..serializers import DisclosureRuleSerializer
 
 
 class DisclosureRuleListCreateView(generics.ListCreateAPIView):
     serializer_class = DisclosureRuleSerializer
+    permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
         return DisclosureService.list_rules(self.request.user)
@@ -17,6 +19,7 @@ class DisclosureRuleListCreateView(generics.ListCreateAPIView):
 
 class DisclosureRuleDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = DisclosureRuleSerializer
+    permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
         return DisclosureService.list_rules(self.request.user)

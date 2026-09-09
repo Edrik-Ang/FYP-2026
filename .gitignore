@@ -9,3 +9,4 @@ __pycache__/
 reset_db.bat
 
 backupEnv.txt
+/identities/views/__pycache__

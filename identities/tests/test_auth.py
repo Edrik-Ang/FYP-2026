@@ -239,10 +239,21 @@ class AuthServiceUnitTests(APITestCase):
 
 
 class AuthenticationPermissionTests(APITestCase):
-    def test_unauthenticated_user_cannot_access_contexts(self): ## unauthenticated users should not be able to access context endpoints
+
+    def test_unauthenticated_user_cannot_access_contexts(self): 
         url = reverse('context-list-create-api')
         response = self.client.get(url)
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED) ## should return 401 Unauthorized
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED) 
+
+    def test_unauthenticated_user_cannot_access_disclosure_rules(self):
+        url = reverse('disclosure-rule-list-create-api')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_unauthenticated_user_cannot_search_users(self):
+        url = reverse('user-search-api')  
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
 
 class PasswordResetTokenBlackListTests(APITestCase):

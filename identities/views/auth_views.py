@@ -34,3 +34,5 @@ class WebPasswordResetConfirmView(PasswordResetConfirmView):
         response = super().form_valid(form)
         AuthService.blacklist_all_tokens_for_user(self.user)
         return response
+
+
