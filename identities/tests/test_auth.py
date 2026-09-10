@@ -174,9 +174,19 @@ class LoginAPITests(APITestCase):
         self.assertIn('access', response.data)
         self.assertIn('refresh', response.data)
 
+    def test_login_rejects_missing_username(self):
+        response = self.client.post(self.url, {'password': 'testpass123'})
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('username', response.data)
+
     def test_login_with_wrong_password(self):
         response = self.client.post(self.url, {'username': 'testuser','password': 'wrongpass'})
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED) ## should return 401 Unauthorized
+
+    def test_login_rejects_missing_password(self):
+        response = self.client.post(self.url, {'username': 'testuser'})
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('password', response.data)
 
     def test_login_with_nonexistent_user(self):
         response = self.client.post(self.url, {'username': 'nonexistent','password': 'testpass123'})

@@ -49,6 +49,14 @@ class RegisterSerializer(serializers.ModelSerializer):
         Context.objects.create(owner=user, name='Public', is_public_default=True)  ## create default public context for new user
         return user
 
+
+## Serializer for login, validates username and password fields, no need modelSerializer as login dont create/update a user instance, 
+## just validates credentials and returns a token if valid.
+class LoginSerializer(serializers.Serializer):
+    username = serializers.CharField(required=True, trim_whitespace=False)
+    password = serializers.CharField(required=True, trim_whitespace=False, write_only=True)
+
+
 ##Serializer for Context model, handles converting Context instances to and from JSON
 class ContextSerializer(serializers.ModelSerializer):
 

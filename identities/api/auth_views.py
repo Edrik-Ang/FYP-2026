@@ -6,7 +6,7 @@ from rest_framework.permissions import AllowAny
 from django.contrib.auth import get_user_model
 from rest_framework_simplejwt.exceptions import TokenError
 
-from ..serializers import RegisterSerializer
+from ..serializers import LoginSerializer, RegisterSerializer
 from ..services.auth_service import AuthService
 from rest_framework.throttling import AnonRateThrottle
 
@@ -38,6 +38,9 @@ class LoginAPIView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
+        serializer = LoginSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
         user = AuthService.authenticate_user(
             request,
             username=request.data.get('username'),
@@ -46,9 +49,7 @@ class LoginAPIView(APIView):
         if user is None:
             return Response({'error': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
         tokens = AuthService.issue_token(user)
-        return Response({
-            'username': user.username, **tokens
-        })
+        return Response({'username': user.username, **tokens})
 
 
 class LogoutAPIView(APIView):
