@@ -1,4 +1,4 @@
-## api/integration_views.py -- handles the Steam integration API endpoints, using SteamService for business logic.
+## api/api_steam.py -- handles the Steam integration API endpoints, using SteamService for business logic.
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated

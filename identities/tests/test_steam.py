@@ -527,7 +527,7 @@ class SteamProfileViewTests(TestCase):
 # ---------------------------------------------------------------------------
 
 class SteamIntegrationAPITests(APITestCase):
-    """Tests the API view layer (api/integration_views.py) -- request/response
+    """Tests the API view layer (api/api_steam.py) -- request/response
     contract, ownership checks, status codes. Complements the web-view tests
     above rather than duplicating them; this hits a different set of views."""
 
