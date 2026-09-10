@@ -46,7 +46,7 @@ class DisclosureService:
             return None # Own profile, no filtering needed.
 
         contexts = set()
-        public_context = Context.objects.filter(owner=owner, is_public_default=True).first()
+        public_context = Context.objects.filter(owner=owner, is_system=True).first()
         if public_context:
             contexts.add(public_context)
 

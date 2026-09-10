@@ -83,7 +83,7 @@ def public_profile_view(request):
     if public_identity:
         return redirect('identity-edit', pk=public_identity.pk)
 
-    public_context = ContextService.get_contexts(request.user).filter(is_public_default=True).first()
+    public_context = ContextService.get_contexts(request.user).filter(is_system=True).first()
     if not public_context:
         messages.error(request, "No public context found. Please create a public context first.")
         return redirect('identity-create')

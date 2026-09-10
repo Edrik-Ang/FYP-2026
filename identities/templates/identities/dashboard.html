@@ -71,8 +71,8 @@
         {% for context in contexts %}
             <li class="text-sm">
                 {{ context.name }}
-                {% if context.is_public_default %}
-                    <span class="text-xs text-gray-400">(default public)</span>
+                {% if context.is_system  %}
+                    <span class="text-xs text-gray-400">(default system)</span>
                 {% endif %}
             </li>
         {% endfor %}

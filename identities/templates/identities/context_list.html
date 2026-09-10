@@ -13,11 +13,11 @@
         <div class="bg-white rounded-lg shadow-sm p-4 mb-3 flex justify-between items-center">
             <div>
                 <span class="font-semibold">{{ context.name }}</span>
-                {% if context.is_public_default %}
-                    <span class="text-xs text-gray-400 ml-2">(default public — cannot be renamed or deleted)</span>
+                {% if context.is_system %}
+                    <span class="text-xs text-gray-400 ml-2">(default system — cannot be renamed or deleted)</span>
                 {% endif %}
             </div>
-            {% if not context.is_public_default %}
+            {% if not context.is_system %}
                 <div class="flex gap-2 items-center">
                     <a href="{% url 'context-edit' context.pk %}" class="text-sm text-blue-600 hover:underline">Edit</a>
                     <form method="post" action="{% url 'context-delete' context.pk %}">

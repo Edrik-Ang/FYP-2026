@@ -20,8 +20,8 @@ class ContextService:
 
     @staticmethod
     def update_context(context, serializer):
-        if context.is_public_default:
-            raise ValidationError("Default public context cannot be renamed.")
+        if context.is_system:
+            raise ValidationError("System context cannot be renamed.")
         try:
             return serializer.save()
         except IntegrityError:
@@ -29,8 +29,8 @@ class ContextService:
 
     @staticmethod
     def delete_context(context):
-        if context.is_public_default:
-            raise ValidationError("Default public context cannot be deleted.")
+        if context.is_system:
+            raise ValidationError("System context cannot be deleted.")
 
         if context.identities.exists():
             raise ValidationError("Context is currently assigned to identities.")

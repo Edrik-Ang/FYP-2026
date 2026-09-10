@@ -81,7 +81,7 @@ class DisclosureRuleListCreateAPITests(AuthenticatedAPITestCase):
         # a valid disclosure-rule context, since a public-facing identity
         # (rules keyed on the Public context) is literally how the public
         # profile feature works. Blocking it here would silently disable that.
-        public_context = Context.objects.create(owner=self.user, name='Public', is_public_default=True)
+        public_context = Context.objects.create(owner=self.user, name='Public', is_system=True)
         response = self.client.post(self.url, {
             'identity': self.identity.pk, 'context': public_context.pk,
             'field_name': 'identity_name', 'is_visible': True,
@@ -196,7 +196,7 @@ class DisclosureEngineTests(AuthenticatedAPITestCase):
     def test_stranger_sees_public_tagged_field_with_no_relationship(self):
         # No relationship at all -- this is purely the auto-granted Public
         # context from get_effective_contexts.
-        public_context = Context.objects.create(owner=self.user, name='Public', is_public_default=True)
+        public_context = Context.objects.create(owner=self.user, name='Public', is_system=True)
         DisclosureRule.objects.create(
             identity=self.work_identity, context=public_context,
             field_name='identity_name', is_visible=True,

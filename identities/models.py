@@ -15,7 +15,7 @@ class Context(models.Model):
     """
     owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='contexts')
     name = models.CharField(max_length=100)
-    is_public_default = models.BooleanField(default=False) ##For default public profile for discoverability
+    is_system = models.BooleanField(default=False) ## Reserved context (e.g public) (system defined)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -125,3 +125,21 @@ class LinkedAccount(models.Model):
 
     def __str__(self):
         return f"{self.user.username}: {self.provider} ({self.provider_uid})"
+
+
+## one to one profile extension for django user model. 
+class UserProfile(models.Model):
+    """
+    One-to-one profile extension for stock Django user model. 
+    Holding account-level settings that dont belong on context or relationship.
+    Currently just discoverability. (Stranger cannot see if is_discoverable=False,  ev)
+    (Layer 1: can a stranger find/reach this user at all) -- separated from public context 
+    Disclosure rules (Layer 2: what they see if they do)
+    """
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='profile')
+    is_discoverable = models.BooleanField(default=True) # Whether the user can be discovered by strangers
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.user.username}'s profile (discoverable={self.is_discoverable})"
+

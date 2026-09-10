@@ -47,7 +47,7 @@ class RegisterAPITests(APITestCase):
             'password2': 'testpass123',
         })
         user = User.objects.get(username='newuser')
-        public_contexts = Context.objects.filter(owner=user, is_public_default=True)
+        public_contexts = Context.objects.filter(owner=user, is_system=True)
         self.assertEqual(public_contexts.count(), 1)
         self.assertEqual(public_contexts.first().name, 'Public')
 
@@ -245,7 +245,7 @@ class AuthServiceUnitTests(APITestCase):
         })
         serializer.is_valid(raise_exception=True)
         user = AuthService.register_user(serializer)
-        self.assertTrue(Context.objects.filter(owner=user, is_public_default=True).exists())
+        self.assertTrue(Context.objects.filter(owner=user, is_system=True).exists())
 
 
 class AuthenticationPermissionTests(APITestCase):

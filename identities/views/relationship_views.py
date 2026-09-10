@@ -47,7 +47,7 @@ def relationship_create_view(request):
         errors = serializer.errors
     users = User.objects.exclude(id=request.user.id).order_by('username')
     ## exclude public, matches serializer rules and prevents user from using public context for relationship tagging, meant for public visibility, not relationship tagging
-    contexts = ContextService.get_contexts(request.user).exclude(is_public_default=True)
+    contexts = ContextService.get_contexts(request.user).exclude(is_system=True)
     return render(request, 'identities/relationship_form.html', {'errors': errors, 'users': users, 'contexts': contexts})
 
 @login_required
@@ -65,7 +65,7 @@ def relationship_edit_view(request, pk):
             RelationshipService.update_relationship(serializer)
             return redirect('relationship-list')
         errors = serializer.errors
-    contexts = ContextService.get_contexts(request.user).exclude(is_public_default=True)
+    contexts = ContextService.get_contexts(request.user).exclude(is_system=True)
     current_context_ids = set(relationship.contexts.values_list('id', flat=True))
     return render(request, 'identities/relationship_form.html', {'errors': errors, 'relationship': relationship, 'contexts': contexts, 'current_context_ids': current_context_ids})
 

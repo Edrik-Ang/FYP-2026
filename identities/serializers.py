@@ -46,7 +46,7 @@ class RegisterSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         validated_data.pop('password2')  ## remove password2 as it's not needed for user creation
         user = User.objects.create_user(**validated_data)
-        Context.objects.create(owner=user, name='Public', is_public_default=True)  ## create default public context for new user
+        Context.objects.create(owner=user, name='Public', is_system=True)  ## create default public context for new user
         return user
 
 
@@ -63,8 +63,8 @@ class ContextSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Context
-        fields = ['id', 'name', 'is_public_default', 'created_at']
-        read_only_fields = ['id', 'is_public_default', 'created_at']
+        fields = ['id', 'name', 'is_system', 'created_at']
+        read_only_fields = ['id', 'is_system', 'created_at']
 
     def validate_name(self, value):
         request = self.context['request']
@@ -164,8 +164,8 @@ class RelationshipSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Relationship already exists.")
 
         for context in contexts:
-            if context.is_public_default: ## cannot use public context, meant for public visibility, not relationship tagging
-                raise serializers.ValidationError("Public cannot be used as relationship tag.")
+            if context.is_system: ## cannot use public context, meant for public visibility, not relationship tagging
+                raise serializers.ValidationError("System context cannot be used as relationship tag.")
         
         return attrs
 

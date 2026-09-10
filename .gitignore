@@ -11,3 +11,4 @@ backupEnv.txt
 __pycache__/
 *.pyc
 /config/__pycache__
+backup.sql
