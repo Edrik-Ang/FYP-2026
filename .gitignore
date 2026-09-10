@@ -4,11 +4,10 @@
 envs/
 venv/
 .venv/
-__pycache__/
-*.pyc
 reset_db.bat
 
 backupEnv.txt
 /identities/views/__pycache__
+__pycache__/
 *.pyc
 /config/__pycache__

@@ -71,7 +71,7 @@ class SteamMaterializeAPIView(APIView):
 
         identity = IdentityProfile.objects.filter(pk=request.data.get('identity_id'), owner=request.user).first()
         if not identity:
-            return Response({'detail': 'Invalid identity_id.'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'detail': 'Invalid identity_id.'}, status=status.HTTP_404_NOT_FOUND)
 
         materialized = []
         for field in request.data.get('fields', []):

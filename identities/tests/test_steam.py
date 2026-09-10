@@ -566,7 +566,7 @@ class SteamIntegrationAPITests(APITestCase):
         response = self.client.post('/api/integrations/steam/materialize/', {
             'identity_id': other_identity.id, 'fields': ['summary'],
         }, format='json')
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_unlink_removes_account(self):
         LinkedAccount.objects.create(user=self.user, provider='steam', provider_uid='765')

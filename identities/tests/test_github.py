@@ -33,7 +33,7 @@ class GithubServiceVerifyCallbackTests(TestCase):
 
     @patch('identities.services.github_service.requests.post')
     def test_valid_callback_returns_token_data(self, mock_post):
-        mock_post.return_value = Mock(json=lambda: {
+        mock_post.return_value = Mock(status_code=200, json=lambda: {
             'access_token': 'gho_test123', 'refresh_token': 'ghr_test456', 'expires_in': 28800,
         })
         request = self._build_request({'state': 'abc123', 'code': 'somecode'})
@@ -58,7 +58,7 @@ class GithubServiceVerifyCallbackTests(TestCase):
 
     @patch('identities.services.github_service.requests.post')
     def test_missing_access_token_in_response_raises(self, mock_post):
-        mock_post.return_value = Mock(json=lambda: {'error': 'bad_verification_code'})
+        mock_post.return_value = Mock(status_code=200, json=lambda: {'error': 'bad_verification_code'})
         request = self._build_request({'state': 'abc123', 'code': 'somecode'})
         with self.assertRaises(ValidationError):
             GithubService.verify_callback(request)
