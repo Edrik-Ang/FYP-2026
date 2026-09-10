@@ -1,3 +1,4 @@
+# /identities/tests/test_github.py handles testing of the GitHub integration service and API endpoints.
 from unittest.mock import patch, Mock
 
 import requests

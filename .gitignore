@@ -10,3 +10,5 @@ reset_db.bat
 
 backupEnv.txt
 /identities/views/__pycache__
+*.pyc
+/config/__pycache__
