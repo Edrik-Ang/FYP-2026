@@ -150,3 +150,35 @@ class UserProfile(models.Model):
     def __str__(self):
         return f"{self.user.username}'s profile (discoverable={self.is_discoverable})"
 
+
+class ConnectionRequest(models.Model):
+    """
+    Tracks one user's requests to connect with another -- separate from Relationship, which records what context the owner has tagged someone with once connected.
+    Establishing mutual acknowledgement (this model) and disclosing content (Relationship + DisclosureRule) are separate layers of the relationship., 
+    see RelationshipService.create_request() for cooldown logic preventing spam after a decline. and is_discoverable check for reachability.
+    """
+    PENDING = 'pending'
+    ACCEPTED = 'accepted'
+    DECLINED = 'declined'
+    STATUS_CHOICES = [ # current status of the connection request
+        (PENDING, 'Pending'),
+        (ACCEPTED, 'Accepted'),
+        (DECLINED, 'Declined'),
+    ]
+    sender = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='sent_connection_requests') # who send it
+    recipient = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='received_connection_requests') # who receives it
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default=PENDING) 
+    created_at = models.DateTimeField(auto_now_add=True)
+    responded_at = models.DateTimeField(blank=True, null=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['sender', 'recipient'],
+                condition=models.Q(status='pending'),
+                name='unique_connection_request_per_pair',
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.sender.username} -> {self.recipient.username} ({self.status})"

@@ -1,0 +1,118 @@
+## /identities/tests/test_connection_request.py -- covers RelationshipService.create_request()'s business rules:
+## the is_discoverable gate (and its generic-error indistinguishability from a nonexistent
+## user), duplicate-pending rejection, self-request rejection, already-connected rejection,
+## and the resend cooldown after a decline. Service-level tests, not API-level -- no view/URL
+## exists yet for sending a connection request.
+from datetime import timedelta
+
+from django.contrib.auth import get_user_model
+from django.test import TestCase
+from django.utils import timezone
+from rest_framework.exceptions import ValidationError
+
+from identities.models import ConnectionRequest
+from identities.services.relationship_service import RelationshipService
+
+User = get_user_model()
+
+
+class CreateConnectionRequestTests(TestCase):
+    def setUp(self):
+        self.alice = User.objects.create_user(username='alice', password='testpass123')
+        self.bob = User.objects.create_user(username='bob', password='testpass123')
+        # UserProfile is auto-provisioned by the post_save signal on User creation
+
+    def test_create_request_success(self):
+        req = RelationshipService.create_request(self.alice, 'bob')
+        self.assertEqual(req.sender, self.alice)
+        self.assertEqual(req.recipient, self.bob)
+        self.assertEqual(req.status, ConnectionRequest.PENDING)
+
+    def test_rejects_duplicate_pending_request(self):
+        RelationshipService.create_request(self.alice, 'bob')
+        with self.assertRaises(ValidationError):
+            RelationshipService.create_request(self.alice, 'bob')
+
+    def test_rejects_self_request(self):
+        with self.assertRaises(ValidationError):
+            RelationshipService.create_request(self.alice, 'alice')
+
+    def test_nonexistent_user_and_undiscoverable_user_give_identical_error(self):
+        # modes must be indistinguishable to the caller.
+        self.bob.profile.is_discoverable = False
+        self.bob.profile.save()
+
+        with self.assertRaises(ValidationError) as undiscoverable_ctx:
+            RelationshipService.create_request(self.alice, 'bob')
+
+        with self.assertRaises(ValidationError) as nonexistent_ctx:
+            RelationshipService.create_request(self.alice, 'nonexistent_user')
+
+        self.assertEqual(
+            str(undiscoverable_ctx.exception.detail[0]),
+            str(nonexistent_ctx.exception.detail[0]),
+        )
+
+    def test_undiscoverable_user_blocks_request_synchronously_nothing_persisted(self):
+        self.bob.profile.is_discoverable = False
+        self.bob.profile.save()
+
+        with self.assertRaises(ValidationError):
+            RelationshipService.create_request(self.alice, 'bob')
+
+        self.assertFalse(
+            ConnectionRequest.objects.filter(sender=self.alice, recipient=self.bob).exists()
+        )
+
+    def test_rejects_request_to_already_connected_user(self):
+        req = RelationshipService.create_request(self.alice, 'bob')
+        req.status = ConnectionRequest.ACCEPTED
+        req.responded_at = timezone.now()
+        req.save()
+
+        with self.assertRaises(ValidationError):
+            RelationshipService.create_request(self.alice, 'bob')
+
+    def test_cooldown_blocks_resend_shortly_after_decline(self):
+        req = RelationshipService.create_request(self.alice, 'bob')
+        req.status = ConnectionRequest.DECLINED
+        req.responded_at = timezone.now()
+        req.save()
+
+        with self.assertRaises(ValidationError):
+            RelationshipService.create_request(self.alice, 'bob')
+
+    def test_resend_allowed_once_cooldown_expires(self):
+        req = RelationshipService.create_request(self.alice, 'bob')
+        req.status = ConnectionRequest.DECLINED
+        req.responded_at = timezone.now() - timedelta(hours=2)  # cooldown is 1 hour
+        req.save()
+
+        new_req = RelationshipService.create_request(self.alice, 'bob')
+        self.assertEqual(new_req.status, ConnectionRequest.PENDING)
+
+    def test_reverse_direction_is_independent(self): # A->B and B->A are separate, unrestricted rows.
+        RelationshipService.create_request(self.alice, 'bob')
+        reverse_req = RelationshipService.create_request(self.bob, 'alice')
+        self.assertEqual(reverse_req.sender, self.bob)
+        self.assertEqual(reverse_req.recipient, self.alice)
+
+    def test_existing_relationships_unaffected_by_is_discoverable_toggle(self):
+        # Locked decision: is_discoverable only gates NEW requests. An
+        # existing Relationship (tagged before or regardless of the toggle)
+        # is untouched -- it's governed entirely by RelationshipContext,
+        # a separate path this method never touches.
+        from identities.models import Context, Relationship
+
+        context = Context.objects.create(owner=self.alice, name='Friend')
+        relationship = Relationship.objects.create(owner=self.alice, target_user=self.bob)
+        relationship.contexts.set([context])
+
+        self.bob.profile.is_discoverable = False
+        self.bob.profile.save()
+
+        # The existing Relationship still exists and is untouched
+        self.assertTrue(
+            Relationship.objects.filter(owner=self.alice, target_user=self.bob).exists()
+        )
+        self.assertIn(context, relationship.contexts.all())
