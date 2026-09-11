@@ -70,3 +70,34 @@ class RelationshipService:
                     raise ValidationError("You cannot send a new connection request to this user yet. Please wait before trying again.")
 
         return ConnectionRequest.objects.create(sender=sender, recipient=recipient)
+
+
+    @staticmethod
+    def accept_request(connection_request, actor):
+        """ Accepts a pending connection request, (something like friend request) actor is recipient.
+            the view is expected to have already scoped the fetch to recipient=request.user, but this check stays regardless,
+            so method is safe to call from anywhere without relying on the caller having scoped the query correctly.
+        """
+        if connection_request.recipient != actor:
+            raise ValidationError("You are not authorized to respond to this request")
+        if connection_request.status != ConnectionRequest.PENDING:
+            raise ValidationError("This request has already been responded to.")
+        connection_request.status = ConnectionRequest.ACCEPTED
+        connection_request.responded_at = timezone.now()
+        connection_request.save()
+        return connection_request
+
+
+    @staticmethod
+    def decline_request(connection_request, actor):
+        """ Declines a pending connection request, (similar to like rejecting a friend request). saem ownership/status checks as accept_request.
+            Declining a starts the resend cooldown (see create_request()'s check against the most recent DECLINED row.)
+        """
+        if connection_request.recipient != actor:
+            raise ValidationError("You are not authorized to respond to this request.")
+        if connection_request.status != ConnectionRequest.PENDING:
+            raise ValidationError("This request has already been responded to.")
+        connection_request.status = ConnectionRequest.DECLINED
+        connection_request.responded_at = timezone.now()
+        connection_request.save()
+        return connection_request

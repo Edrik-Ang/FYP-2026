@@ -116,3 +116,74 @@ class CreateConnectionRequestTests(TestCase):
             Relationship.objects.filter(owner=self.alice, target_user=self.bob).exists()
         )
         self.assertIn(context, relationship.contexts.all())
+
+
+class RespondToConnetionRequestTests(TestCase):
+    def setUp(self):
+        self.alice = User.objects.create_user(username='alice', password='testpass123')
+        self.bob = User.objects.create_user(username='bob', password='testpass123')
+
+    def test_accept_request_success(self):
+        req = RelationshipService.create_request(self.alice, 'bob')
+        accepted = RelationshipService.accept_request(req, self.bob)
+        self.assertEqual(accepted.status, ConnectionRequest.ACCEPTED)
+        self.assertIsNotNone(accepted.responded_at)
+
+    def test_decline_request_success(self):
+        req = RelationshipService.create_request(self.alice, 'bob')
+        declined = RelationshipService.decline_request(req, self.bob)
+        self.assertEqual(declined.status, ConnectionRequest.DECLINED)
+        self.assertIsNotNone(declined.responded_at)
+
+    def test_cannot_accept_already_responded_request(self):
+        req = RelationshipService.create_request(self.alice, 'bob')
+        RelationshipService.accept_request(req, self.bob)
+        with self.assertRaises(ValidationError):
+            RelationshipService.accept_request(req, self.bob)
+
+    def test_cannot_decline_already_responded_request(self):
+        req = RelationshipService.create_request(self.alice, 'bob')
+        RelationshipService.decline_request(req, self.bob)
+        with self.assertRaises(ValidationError):
+            RelationshipService.decline_request(req, self.bob)
+
+    def test_sender_cannot_accept_own_sent_request(self):
+        # Only the recipient can respond -- the sender attempting to
+        # accept/decline their own outgoing request must be rejected.
+        req = RelationshipService.create_request(self.alice, 'bob')
+        with self.assertRaises(ValidationError):
+            RelationshipService.accept_request(req, self.alice)
+
+    def test_sender_cannot_decline_own_sent_request(self):
+        req = RelationshipService.create_request(self.alice, 'bob')
+        with self.assertRaises(ValidationError):
+            RelationshipService.decline_request(req, self.alice)
+
+    def test_unrelated_user_cannot_respond(self):
+        charlie = User.objects.create_user(username='charlie', password='testpass123')
+        req = RelationshipService.create_request(self.alice, 'bob')
+        with self.assertRaises(ValidationError):
+            RelationshipService.accept_request(req, charlie)
+
+    def test_accepting_does_not_create_a_relationship(self):
+        # accepting a ConnectionRequest never touches, because the RelationshipService is only responsible for the request itself.
+        from identities.models import Relationship
+
+        req = RelationshipService.create_request(self.alice, 'bob')
+        RelationshipService.accept_request(req, self.bob)
+
+        self.assertFalse(
+            Relationship.objects.filter(owner=self.alice, target_user=self.bob).exists()
+        )
+        self.assertFalse(
+            Relationship.objects.filter(owner=self.bob, target_user=self.alice).exists()
+        )
+
+    def test_decline_starts_cooldown_for_resend(self):
+        # Integration check: decline_request() sets responded_at, and
+        # create_request()'s cooldown check reads exactly that field.
+        req = RelationshipService.create_request(self.alice, 'bob')
+        RelationshipService.decline_request(req, self.bob)
+
+        with self.assertRaises(ValidationError):
+            RelationshipService.create_request(self.alice, 'bob')
