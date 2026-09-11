@@ -49,7 +49,7 @@ class RelationshipListCreateAPITests(AuthenticatedAPITestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST) ## should return 400 Bad Request
 
     def test_cannot_use_public_context_as_tag(self): ## public is auto-granted, not taggable.
-        public_context = Context.objects.create(owner=self.user, name='Public', is_system=True)
+        public_context = Context.objects.get(owner=self.user, is_system=True)
         response = self.client.post(self.url, {'target_user': self.other_user.pk, 'contexts': [public_context.pk],})
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST) ## should return 400 Bad Request
 

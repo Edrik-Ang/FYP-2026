@@ -72,13 +72,13 @@ class ContextDetailAPITest(AuthenticatedAPITestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST) ## should return 400 Bad Request
 
     def test_cannot_rename_public_context(self):
-        public_context = Context.objects.create(owner=self.user, name='Public', is_system=True)
+        public_context = Context.objects.get(owner=self.user, is_system=True)
         url = reverse('context-retrieve-update-destroy-api', kwargs={'pk': public_context.pk})
         response = self.client.patch(url, {'name': 'New Public Name'})
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST) ## should return 400 Bad Request
 
     def test_cannot_delete_public_context(self):
-        public_context = Context.objects.create(owner=self.user, name='Public', is_system=True)
+        public_context = Context.objects.get(owner=self.user, is_system=True)
         url = reverse('context-retrieve-update-destroy-api', kwargs={'pk': public_context.pk})
         response = self.client.delete(url)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST) ## should return 400 Bad Request

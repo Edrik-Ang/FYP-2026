@@ -46,7 +46,6 @@ class RegisterSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         validated_data.pop('password2')  ## remove password2 as it's not needed for user creation
         user = User.objects.create_user(**validated_data)
-        Context.objects.create(owner=user, name='Public', is_system=True)  ## create default public context for new user
         return user
 
 

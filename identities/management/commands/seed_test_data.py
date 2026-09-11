@@ -69,9 +69,7 @@ class Command(BaseCommand):
             # Fetched by the is_system flag rather than by name, so
             # this stays correct whether or not a registration signal already
             # created a default context for this user under a different name.
-            public_ctx, _ = Context.objects.get_or_create(
-                owner=user, is_system=True, defaults={'name': 'Public'}
-            )
+            public_ctx, _ = Context.objects.get_or_create(owner=self.user, is_system=True)
             contexts[(username, 'Public')] = public_ctx
 
             for context_name in CONTEXT_NAMES:

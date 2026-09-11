@@ -20,6 +20,13 @@ class Context(models.Model):
 
     class Meta:
         unique_together = ('owner', 'name')
+        constraints = [
+            models.UniqueConstraint( ## exactly one system context per user, 
+                fields=['owner'],
+                condition=models.Q(is_system=True),
+                name='unique_system_context_per_owner',
+            )
+        ]
 
     def __str__(self):
         return f"{self.owner.username}: {self.name}"
