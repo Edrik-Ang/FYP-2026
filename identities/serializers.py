@@ -6,7 +6,7 @@ import re
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password as django_validate_password
 from django.core.exceptions import ValidationError as DjangoValidationError
-from .models import Context, IdentityProfile, LinkedAccount, Relationship, DisclosureRule
+from .models import ConnectionRequest, Context, IdentityProfile, LinkedAccount, Relationship, DisclosureRule
 from rest_framework import serializers
 from rest_framework.validators import UniqueValidator 
 
@@ -228,3 +228,20 @@ class LinkedAccountSerializer(serializers.ModelSerializer):
         read_only_fields = fields ## read only end to end, mutations handled by service layer, not serializer.
 
 ## Other serializers later (Steam , LinkedIn)
+
+
+# Business logic (is_discovrable gate, cooldownn, status transition in RelationshipService). 
+class ConnectionRequestSerializer(serializers.ModelSerializer):
+    sender_username = serializers.CharField(source='sender.username', read_only=True)
+    recipient_username = serializers.CharField(source='recipient.username', read_only=True)
+
+    class Meta:
+        model = ConnectionRequest
+        fields = ['id', 'sender_username', 'recipient_username', 'status', 'created_at', 'responded_at']
+        read_only_fields = fields # all read only
+
+
+## input serializer for sending a requet, same shape as LoginSerializer
+# only parses/validates the presence of recipient_username bfore handing off to service.
+class ConnectionRequestCreateSerializer(serializers.Serializer):
+    recipient_username = serializers.CharField(required=True, trim_whitespace=True)

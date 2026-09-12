@@ -16,6 +16,10 @@ from ..views import (
 from identities.views.github_views import (
     github_profile_view, github_refresh_view, github_unlink_view, github_link_view, github_callback_view
 )
+from identities.views.connection_request_views import (
+    connection_request_list_view, connection_request_create_view,
+    connection_request_accept_view, connection_request_decline_view,
+)
 
 
 urlpatterns = [
@@ -74,4 +78,10 @@ urlpatterns = [
     path('integrations/github/unlink/', github_unlink_view, name='github-unlink'),
     path('integrations/github/refresh/', github_refresh_view, name='github-refresh'),
     path('integrations/github/profile/', github_profile_view, name='github-profile'),
+
+    # connection request urls 
+    path('connection-requests/', connection_request_list_view, name='connection-request-list'),
+    path('connection-requests/new/', connection_request_create_view, name='connection-request-create'),
+    path('connection-requests/<int:pk>/accept/', connection_request_accept_view, name='connection-request-accept'),
+    path('connection-requests/<int:pk>/decline/', connection_request_decline_view, name='connection-request-decline'),
 ]
