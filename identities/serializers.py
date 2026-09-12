@@ -6,7 +6,7 @@ from django.db.models import Q
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password as django_validate_password
 from django.core.exceptions import ValidationError as DjangoValidationError
-from .models import ConnectionRequest, Context, IdentityProfile, LinkedAccount, Relationship, DisclosureRule
+from .models import ConnectionRequest, Context, IdentityProfile, LinkedAccount, Relationship, DisclosureRule, UserProfile
 from rest_framework import serializers
 from rest_framework.validators import UniqueValidator 
 
@@ -56,7 +56,8 @@ class LoginSerializer(serializers.Serializer):
     password = serializers.CharField(required=True, trim_whitespace=False, write_only=True)
 
 
-##Serializer for Context model, handles converting Context instances to and from JSON
+
+##Serializer for Context model, handles converting Context instances to and from JSON (Layer2,, content)
 class ContextSerializer(serializers.ModelSerializer):
 
 
@@ -243,7 +244,7 @@ class ConnectionRequestSerializer(serializers.ModelSerializer):
         model = ConnectionRequest
         fields = ['id', 'sender_username', 'recipient_username', 'status', 'created_at', 'responded_at']
         read_only_fields = fields
-        
+
 
 ## input serializer for sending a requet, same shape as LoginSerializer
 # only parses/validates the presence of recipient_username bfore handing off to service.
@@ -256,3 +257,10 @@ class ConnectionOverviewSerializer(serializers.Serializer):
     state = serializers.CharField()
     request_id = serializers.IntegerField(required=False, allow_null=True)
     relationship_id = serializers.IntegerField(required=False, allow_null=True)
+
+
+## serializer for UserProfile, just for is_disocverable, account-wide toggle for layer 1 of dislossure pipeline. 
+class UserProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserProfile
+        fields = ['is_discoverable']
