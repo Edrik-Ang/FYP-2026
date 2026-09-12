@@ -4,12 +4,17 @@
 ## and the resend cooldown after a decline. Service-level tests, not API-level -- no view/URL
 ## exists yet for sending a connection request.
 from datetime import timedelta
+from django.contrib.auth import get_user_model
+from django.test import TestCase
+from django.urls import reverse
+from rest_framework import status
 
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.utils import timezone
 from rest_framework.exceptions import ValidationError
 
+from ..tests.base import AuthenticatedAPITestCase
 from identities.models import ConnectionRequest
 from identities.services.relationship_service import RelationshipService
 
@@ -187,3 +192,118 @@ class RespondToConnetionRequestTests(TestCase):
 
         with self.assertRaises(ValidationError):
             RelationshipService.create_request(self.alice, 'bob')
+
+class ConnectionRequestCreateAPITests(AuthenticatedAPITestCase):
+    def setUp(self):
+        super().setUp()
+        self.bob = User.objects.create_user(username='bob', password='testpass123')
+        self.url = reverse('connection-request-create-api')
+
+    def test_requires_authentication(self):
+        self.client.credentials()  # clear the auth header set in base setUp
+        response = self.client.post(self.url, {'recipient_username': 'bob'})
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_create_request_success(self):
+        response = self.client.post(self.url, {'recipient_username': 'bob'})
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data['status'], 'pending')
+        self.assertEqual(response.data['recipient_username'], 'bob')
+
+    def test_nonexistent_and_undiscoverable_user_give_identical_response(self):
+        self.bob.profile.is_discoverable = False
+        self.bob.profile.save()
+
+        undiscoverable_response = self.client.post(self.url, {'recipient_username': 'bob'})
+        nonexistent_response = self.client.post(self.url, {'recipient_username': 'nonexistent_user'})
+
+        self.assertEqual(undiscoverable_response.status_code, nonexistent_response.status_code)
+        self.assertEqual(undiscoverable_response.data, nonexistent_response.data)
+
+    def test_missing_recipient_username_is_bad_request(self):
+        response = self.client.post(self.url, {})
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+
+class ConnectionRequestListAPITests(AuthenticatedAPITestCase):
+    def setUp(self):
+        super().setUp()
+        self.bob = User.objects.create_user(username='bob', password='testpass123')
+        self.charlie = User.objects.create_user(username='charlie', password='testpass123')
+        self.incoming_url = reverse('connection-request-incoming-api')
+        self.outgoing_url = reverse('connection-request-outgoing-api')
+
+    def test_incoming_shows_only_pending_requests_sent_to_you(self):
+        ConnectionRequest.objects.create(sender=self.bob, recipient=self.user)
+        ConnectionRequest.objects.create(sender=self.charlie, recipient=self.bob)  # not involving self.user
+
+        response = self.client.get(self.incoming_url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data[0]['sender_username'], 'bob')
+
+    def test_incoming_excludes_already_responded_requests(self):
+        req = ConnectionRequest.objects.create(sender=self.bob, recipient=self.user)
+        req.status = ConnectionRequest.ACCEPTED
+        req.save()
+
+        response = self.client.get(self.incoming_url)
+        self.assertEqual(response.data, [])
+
+    def test_outgoing_shows_all_statuses_of_requests_you_sent(self):
+        pending = ConnectionRequest.objects.create(sender=self.user, recipient=self.bob)
+        declined = ConnectionRequest.objects.create(sender=self.user, recipient=self.charlie)
+        declined.status = ConnectionRequest.DECLINED
+        declined.save()
+
+        response = self.client.get(self.outgoing_url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        statuses = {r['status'] for r in response.data}
+        self.assertEqual(statuses, {'pending', 'declined'})
+
+    def test_outgoing_does_not_show_requests_sent_to_you(self):
+        ConnectionRequest.objects.create(sender=self.bob, recipient=self.user)
+        response = self.client.get(self.outgoing_url)
+        self.assertEqual(response.data, [])
+
+
+class ConnectionRequestAcceptDeclineAPITests(AuthenticatedAPITestCase):
+    def setUp(self):
+        super().setUp()
+        self.bob = User.objects.create_user(username='bob', password='testpass123')
+        self.charlie = User.objects.create_user(username='charlie', password='testpass123')
+        self.request_to_user = ConnectionRequest.objects.create(sender=self.bob, recipient=self.user)
+        self.accept_url = reverse('connection-request-accept-api', kwargs={'pk': self.request_to_user.pk})
+        self.decline_url = reverse('connection-request-decline-api', kwargs={'pk': self.request_to_user.pk})
+
+    def test_recipient_can_accept(self):
+        response = self.client.post(self.accept_url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['status'], 'accepted')
+
+    def test_recipient_can_decline(self):
+        response = self.client.post(self.decline_url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['status'], 'declined')
+
+    def test_sender_cannot_accept_their_own_sent_request(self):
+        # self.user is the recipient here; switch to Bob (the sender) and confirm 404,
+        # not 403 -- same non-leaking pattern as Relationship/Context detail views.
+        self.authenticate_as(self.bob)
+        response = self.client.post(self.accept_url)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_unrelated_user_cannot_accept(self):
+        self.authenticate_as(self.charlie)
+        response = self.client.post(self.accept_url)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_cannot_accept_already_responded_request(self):
+        self.client.post(self.accept_url)
+        response = self.client.post(self.accept_url)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_accept_requires_authentication(self):
+        self.client.credentials()
+        response = self.client.post(self.accept_url)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
