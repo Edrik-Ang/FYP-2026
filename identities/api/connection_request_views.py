@@ -6,7 +6,7 @@ from rest_framework.generics import get_object_or_404
 from rest_framework.permissions import IsAuthenticated
 
 from ..models import ConnectionRequest
-from ..serializers import ConnectionRequestSerializer, ConnectionRequestCreateSerializer
+from ..serializers import ConnectionOverviewSerializer, ConnectionRequestSerializer, ConnectionRequestCreateSerializer
 from ..services.relationship_service import RelationshipService
 
 
@@ -23,26 +23,13 @@ class ConnectionRequestCreateAPIView(APIView):
         return Response(ConnectionRequestSerializer(connection_request).data, status=201)
 
 
-class IncomingConnectionRequestListAPIView(generics.ListAPIView):
-    """GET /api/connection-requests/incoming/ -- pending requests sent TO the authenticated user."""
-    serializer_class = ConnectionRequestSerializer
+class ConnectionOverviewAPIView(generics.ListAPIView):
+    """GET /api/connection-requests/overview/ -- one entry per person the authenticated user has any connection histroy with. """
+    serializer_class = ConnectionOverviewSerializer
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        return ConnectionRequest.objects.filter(
-            recipient=self.request.user
-        ).select_related('sender').order_by('-created_at')
-
-
-class OutgoingConnectionRequestListAPIView(generics.ListAPIView):
-    """GET /api/connection-requests/outgoing/ -- requests the authenticated user has sent, any status."""
-    serializer_class = ConnectionRequestSerializer
-    permission_classes = [IsAuthenticated]
-
-    def get_queryset(self):
-        return ConnectionRequest.objects.filter(
-            sender=self.request.user
-        ).select_related('recipient').order_by('-created_at')
+        return RelationshipService.get_connection_overview(self.request.user)
 
 
 class ConnectionRequestAcceptAPIView(APIView):

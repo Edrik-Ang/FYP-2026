@@ -14,7 +14,7 @@ class UserSearchAPIView(generics.ListAPIView):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        queryset = User.objects.exclude(id=self.request.user.id)
+        queryset = User.objects.exclude(id=self.request.user.id).filter(profile__is_discoverable=True)
         search = self.request.query_params.get('search')
         if search:
             queryset = queryset.filter(username__icontains=search)

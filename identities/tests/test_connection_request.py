@@ -122,6 +122,20 @@ class CreateConnectionRequestTests(TestCase):
         )
         self.assertIn(context, relationship.contexts.all())
 
+    def test_resend_updates_same_row_not_a_new_one(self):
+        req = RelationshipService.create_request(self.alice, 'bob')
+        original_pk = req.pk
+        req.status = ConnectionRequest.DECLINED
+        req.responded_at = timezone.now() - timedelta(hours=2)
+        req.save()
+
+        revived = RelationshipService.create_request(self.alice, 'bob')
+
+        self.assertEqual(revived.pk, original_pk)
+        self.assertEqual(
+            ConnectionRequest.objects.filter(sender=self.alice, recipient=self.bob).count(), 1
+        )
+
 
 class RespondToConnetionRequestTests(TestCase):
     def setUp(self):
@@ -225,46 +239,39 @@ class ConnectionRequestCreateAPITests(AuthenticatedAPITestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
 
-class ConnectionRequestListAPITests(AuthenticatedAPITestCase):
+class ConnectionOverviewAPITests(AuthenticatedAPITestCase):
     def setUp(self):
         super().setUp()
         self.bob = User.objects.create_user(username='bob', password='testpass123')
         self.charlie = User.objects.create_user(username='charlie', password='testpass123')
-        self.incoming_url = reverse('connection-request-incoming-api')
-        self.outgoing_url = reverse('connection-request-outgoing-api')
+        self.url = reverse('connection-request-overview-api')
 
-    def test_incoming_shows_only_pending_requests_sent_to_you(self):
-        ConnectionRequest.objects.create(sender=self.bob, recipient=self.user)
-        ConnectionRequest.objects.create(sender=self.charlie, recipient=self.bob)  # not involving self.user
+    def test_shows_one_entry_per_person_regardless_of_direction(self):
+        ConnectionRequest.objects.create(sender=self.bob, recipient=self.user, status=ConnectionRequest.ACCEPTED)
+        ConnectionRequest.objects.create(sender=self.user, recipient=self.charlie, status=ConnectionRequest.PENDING)
 
-        response = self.client.get(self.incoming_url)
+        response = self.client.get(self.url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 1)
-        self.assertEqual(response.data[0]['sender_username'], 'bob')
+        usernames = {entry['username'] for entry in response.data}
+        self.assertEqual(usernames, {'bob', 'charlie'})
 
-    def test_incoming_excludes_already_responded_requests(self):
-        req = ConnectionRequest.objects.create(sender=self.bob, recipient=self.user)
-        req.status = ConnectionRequest.ACCEPTED
-        req.save()
+    def test_accepted_requests_are_shown_not_excluded(self):
+        ConnectionRequest.objects.create(sender=self.bob, recipient=self.user, status=ConnectionRequest.ACCEPTED)
+        response = self.client.get(self.url)
+        self.assertEqual(response.data[0]['state'], 'connected')
 
-        response = self.client.get(self.incoming_url)
-        self.assertEqual(response.data, [])
+    def test_pending_incoming_includes_request_id_for_accept_decline(self):
+        req = ConnectionRequest.objects.create(sender=self.bob, recipient=self.user, status=ConnectionRequest.PENDING)
+        response = self.client.get(self.url)
+        entry = next(e for e in response.data if e['username'] == 'bob')
+        self.assertEqual(entry['state'], 'pending_incoming')
+        self.assertEqual(entry['request_id'], req.pk)
 
-    def test_outgoing_shows_all_statuses_of_requests_you_sent(self):
-        pending = ConnectionRequest.objects.create(sender=self.user, recipient=self.bob)
-        declined = ConnectionRequest.objects.create(sender=self.user, recipient=self.charlie)
-        declined.status = ConnectionRequest.DECLINED
-        declined.save()
-
-        response = self.client.get(self.outgoing_url)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        statuses = {r['status'] for r in response.data}
-        self.assertEqual(statuses, {'pending', 'declined'})
-
-    def test_outgoing_does_not_show_requests_sent_to_you(self):
-        ConnectionRequest.objects.create(sender=self.bob, recipient=self.user)
-        response = self.client.get(self.outgoing_url)
-        self.assertEqual(response.data, [])
+    def test_users_with_no_history_are_absent(self):
+        # self.charlie exists but has no ConnectionRequest with self.user at all
+        response = self.client.get(self.url)
+        usernames = {entry['username'] for entry in response.data}
+        self.assertNotIn('charlie', usernames)
 
 
 class ConnectionRequestAcceptDeclineAPITests(AuthenticatedAPITestCase):

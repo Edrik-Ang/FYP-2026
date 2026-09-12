@@ -174,8 +174,7 @@ class ConnectionRequest(models.Model):
     class Meta:
         constraints = [
             models.UniqueConstraint(
-                fields=['sender', 'recipient'],
-                condition=models.Q(status='pending'),
+                fields=['sender', 'recipient'], ## no longer conditional 'pending', one row exist per directed pair. Resending after decline udpate same row, than create new one.
                 name='unique_connection_request_per_pair',
             )
         ]

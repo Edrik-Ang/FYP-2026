@@ -6,6 +6,7 @@ from django.urls import reverse
 from rest_framework import status
 
 from identities.models import Context, Relationship
+from identities.models import ConnectionRequest
 from .base import AuthenticatedAPITestCase
 
 User = get_user_model()
@@ -16,6 +17,9 @@ class RelationshipListCreateAPITests(AuthenticatedAPITestCase):
         super().setUp()
         self.context = Context.objects.create(owner=self.user, name='Friend')
         self.other_user = User.objects.create_user(username='alice', password='testpass123')
+        ConnectionRequest.objects.create(
+            sender=self.user, recipient=self.other_user, status=ConnectionRequest.ACCEPTED
+        )
         self.url = reverse('relationship-list-create-api')
 
     def test_list_relationships_returns_only_own(self): ## should return only own relationships, not other user's relationships

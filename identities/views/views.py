@@ -5,6 +5,7 @@ from django.contrib.auth import get_user_model
 
 from identities.services.dashboard_service import DashboardService
 from identities.services.disclosure_service import DisclosureService
+from identities.services.relationship_service import RelationshipService
 
 User = get_user_model()
 
@@ -34,9 +35,13 @@ def profile_view(request, username):
     visible_data = DisclosureService.get_visible_identities(owner, request.user)
 
     viewer_contexts = None
+    connection_status = None
     if owner != request.user:
         viewer_contexts = DisclosureService.get_effective_contexts(owner, request.user)
-
-    return render(request, 'identities/profile.html', {'owner': owner, 'visible_data': visible_data, 'viewer_contexts': viewer_contexts})
+        connection_status = RelationshipService.get_connection_status(request.user, owner)
+    return render(request, 'identities/profile.html', {
+        'owner': owner, 'visible_data': visible_data, 
+        'viewer_contexts': viewer_contexts, 'connection_status': connection_status
+    })
 
 

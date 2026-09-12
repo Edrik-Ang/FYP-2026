@@ -3,52 +3,33 @@
 {% block title %}Connection Requests | FYP Identity Project{% endblock %}
 
 {% block content %}
-    <h1 class="text-2xl font-bold mb-6">Connection Requests</h1>
+    <h1 class="text-2xl font-bold mb-6">Connections</h1>
 
-    <p class="mb-6">
-        <a href="{% url 'connection-request-create' %}" class="text-sm px-3 py-1.5 rounded bg-blue-600 text-white hover:bg-blue-700">+ Send a request</a>
-    </p>
-
-    <h2 class="text-lg font-semibold mb-3">Incoming</h2>
-    {% for req in incoming %}
+    {% for conn in connections %}
         <div class="bg-white rounded-lg shadow-sm p-4 mb-3">
-            <p class="font-semibold mb-2">{{ req.sender.username }}</p>
-            {% if req.status == 'pending' %}
+            <p class="font-semibold mb-2">{{ conn.other_user.username }}</p>
+            {% if conn.state == 'pending_incoming' %}
                 <div class="flex gap-3 items-center">
-                    <form method="post" action="{% url 'connection-request-accept' req.pk %}">
+                    <span class="text-xs px-2 py-0.5 rounded-full bg-yellow-50 text-yellow-700 mr-2">Sent you a request</span>
+                    <form method="post" action="{% url 'connection-request-accept' conn.request_id %}">
                         {% csrf_token %}
                         <button type="submit" class="text-sm text-green-600 hover:underline">Accept</button>
                     </form>
-                    <form method="post" action="{% url 'connection-request-decline' req.pk %}">
+                    <form method="post" action="{% url 'connection-request-decline' conn.request_id %}">
                         {% csrf_token %}
                         <button type="submit" class="text-sm text-red-600 hover:underline">Decline</button>
                     </form>
                 </div>
-            {% else %}
-                <span class="text-xs px-2 py-0.5 rounded-full
-                    {% if req.status == 'accepted' %}bg-green-50 text-green-700
-                    {% else %}bg-red-50 text-red-700{% endif %}">
-                    {{ req.get_status_display }}
-                </span>
+            {% elif conn.state == 'pending_outgoing' %}
+                <span class="text-xs px-2 py-0.5 rounded-full bg-yellow-50 text-yellow-700">Request pending</span>
+            {% elif conn.state == 'accepted' or conn.state == 'connected' %}
+                <span class="text-xs px-2 py-0.5 rounded-full bg-green-50 text-green-700">Connected</span>
+            {% elif conn.state == 'cooldown' %}
+                <span class="text-xs px-2 py-0.5 rounded-full bg-red-50 text-red-700">Recently declined</span>
             {% endif %}
         </div>
     {% empty %}
-        <p class="text-gray-500 text-sm mb-6">No requests yet.</p>
-    {% endfor %}
-
-    <h2 class="text-lg font-semibold mb-3 mt-8">Outgoing</h2>
-    {% for req in outgoing %}
-        <div class="bg-white rounded-lg shadow-sm p-4 mb-3">
-            <p class="font-semibold mb-1">{{ req.recipient.username }}</p>
-            <span class="text-xs px-2 py-0.5 rounded-full
-                {% if req.status == 'pending' %}bg-yellow-50 text-yellow-700
-                {% elif req.status == 'accepted' %}bg-green-50 text-green-700
-                {% else %}bg-red-50 text-red-700{% endif %}">
-                {{ req.get_status_display }}
-            </span>
-        </div>
-    {% empty %}
-        <p class="text-gray-500 text-sm">No outgoing requests.</p>
+        <p class="text-gray-500 text-sm">No connections yet.</p>
     {% endfor %}
 
     <p class="mt-6">

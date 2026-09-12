@@ -35,7 +35,8 @@ def relationship_list_view(request):
 @login_required
 def relationship_create_view(request):
     """
-    View to create a new relationship.
+    View to create a new relationship. supports ?target_user=<id> to preselect -- same as identity_create_view's ?context=preselect, used when arriving
+    here from a profile page's connect flow than picking from dropdown.
     """
     errors = None
     if request.method == 'POST':
@@ -45,11 +46,24 @@ def relationship_create_view(request):
             RelationshipService.create_relationship(request.user, serializer)
             return redirect('relationship-list')
         errors = serializer.errors
+
     connected_ids = RelationshipService.get_connected_user_ids(request.user)
     users = User.objects.filter(id__in=connected_ids).order_by('username')
+    contexts = ContextService.get_contexts(request.user).exclude(is_system=True)
+
+    preselect_target_id = request.GET.get('target_user')
+    if preselect_target_id:
+        try:
+            preselect_target_id = int(preselect_target_id)
+        except (ValueError):
+            preselect_target_id = None
+
     ## exclude public, matches serializer rules and prevents user from using public context for relationship tagging, meant for public visibility, not relationship tagging
     contexts = ContextService.get_contexts(request.user).exclude(is_system=True)
-    return render(request, 'identities/relationship_form.html', {'errors': errors, 'users': users, 'contexts': contexts})
+    return render(request, 'identities/relationship_form.html', {
+        'errors': errors, 'users': users, 'contexts': contexts,
+        'preselected_target_id': preselect_target_id,
+    })
 
 @login_required
 def relationship_edit_view(request, pk):

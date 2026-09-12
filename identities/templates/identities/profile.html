@@ -13,6 +13,35 @@
             <strong class="text-gray-700">{% for ctx in viewer_contexts %}{{ ctx.name }}{% if not forloop.last %}, {% endif %}{% endfor %}</strong>
         </p>
     {% endif %}
+    {% if connection_status %}
+    <div class="bg-white rounded-lg shadow-sm p-4 mb-6">
+        {% if connection_status.state == 'none' %}
+            <p class="text-sm text-gray-600 mb-2">Want to connect with {{ owner.username }}?</p>
+            <form method="post" action="{% url 'connection-request-create' %}">
+                {% csrf_token %}
+                <input type="hidden" name="recipient_username" value="{{ owner.username }}">
+                <input type="hidden" name="next" value="{% url 'profile' owner.username %}">
+                <button type="submit" class="text-sm px-3 py-1.5 rounded bg-blue-600 text-white hover:bg-blue-700">Connect</button>
+            </form>
+        {% elif connection_status.state == 'pending_outgoing' %}
+            <span class="text-xs px-2 py-0.5 rounded-full bg-yellow-50 text-yellow-700">Request pending</span>
+        {% elif connection_status.state == 'pending_incoming' %}
+            <p class="text-sm text-gray-600">
+                {{ owner.username }} sent you a request —
+                <a href="{% url 'connection-request-list' %}" class="text-blue-600 hover:underline">respond to it here</a>.
+            </p>
+        {% elif connection_status.state == 'cooldown' %}
+            <span class="text-xs px-2 py-0.5 rounded-full bg-red-50 text-red-700">Recently declined — try again later</span>
+        {% elif connection_status.state == 'connected' %}
+            <p class="text-sm text-gray-600 mb-2"> You're connected to {{ owner.username }}.</p>
+            {% if connection_status.relationship_id %}
+                <a href="{% url 'relationship-edit' connection_status.relationship_id %}" class="text-sm text-blue-600 hover:underline">Edit tags for this connection</a>
+            {% else %}
+                <a href="{% url 'relationship-create' %}?target_user={{ owner.id }}" class="text-sm text-blue-600 hover:underline">Tag this connection</a>
+            {% endif %}
+        {% endif %}
+    </div>
+    {% endif %} 
 
     <h2 class="text-lg font-semibold mb-3">Visible Information</h2>
     {% for identity in visible_data %}

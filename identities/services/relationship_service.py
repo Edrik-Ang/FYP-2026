@@ -44,11 +44,8 @@ class RelationshipService:
     @staticmethod
     def create_request(sender, recipient_username):
         """
-        Create a pending connection request from sender to the user identified
-        by recipient_username. Takes a username, not a resolved user object --
-        avoids letting a nonexistent user and an undiscoverable user fail
-        through different paths; resolving the recipient beforehand would let
-        a 404 leak which case it was.
+        Create or revivie a connection request from sender to user identified by recipient_username. 
+        At most one connectionRequuest row exists per directed pair, a resend after decline (past cooldown) updates same row, than pending rahter than creating a new one.
         """
         try:
             recipient = User.objects.select_related('profile').get(username=recipient_username)
@@ -69,6 +66,11 @@ class RelationshipService:
             if existing.status == ConnectionRequest.DECLINED:
                 if existing.responded_at and existing.responded_at > timezone.now() - RESEND_COOLDOWN:
                     raise ValidationError("You cannot send a new connection request to this user yet. Please wait before trying again.")
+
+                existing.status = ConnectionRequest.PENDING
+                existing.responded_at = None
+                existing.save()
+                return existing
 
         return ConnectionRequest.objects.create(sender=sender, recipient=recipient)
 
@@ -112,3 +114,62 @@ class RelationshipService:
             Q(sender=user) | Q(recipient=user), status=ConnectionRequest.ACCEPTED,
         ).values_list('sender_id', 'recipient_id')
         return {uid for pair in accepted_pairs for uid in pair if uid != user.id}
+
+
+    @staticmethod
+    def get_connection_overview(user):
+        """ Returns a list of connection overview data for the given user. """
+        requests = ConnectionRequest.objects.filter(
+            Q(sender=user) | Q(recipient=user)
+        ).select_related('sender', 'recipient')
+
+        other_users = {}
+        for req in requests:
+            other = req.recipient if req.sender_id == user.id else req.sender
+            other_users[other.id] = other
+
+        overview = []
+        for other in other_users.values():
+            status = RelationshipService.get_connection_status(user, other)
+            overview.append({'other_user': other, **status})
+
+        overview.sort(key=lambda item: item['other_user'].username)
+        return overview
+
+    @staticmethod
+    def get_connection_status(viewer, other_user):
+        """ Read only status lookup drives the connect button on a profile page,
+        viewer will always see the correct statte based on what would acutally happen if they click the button. """
+        if viewer == other_user:
+            return {'state': 'self'}
+
+        accepted = ConnectionRequest.objects.filter(
+            Q(sender=viewer, recipient=other_user) | Q(sender=other_user, recipient=viewer),
+            status=ConnectionRequest.ACCEPTED,
+        ).exists()
+        if accepted:
+            relationship = Relationship.objects.filter(owner=viewer, target_user=other_user).first()
+            return {
+                'state': 'connected',
+                'relationship_id': relationship.id if relationship else None,
+            }
+
+        outgoing_pending = ConnectionRequest.objects.filter(
+            sender=viewer, recipient=other_user, status=ConnectionRequest.PENDING
+        ).exists()
+        if outgoing_pending:
+            return {'state': 'pending_outgoing'}
+        
+        incoming = ConnectionRequest.objects.filter(
+            sender=other_user, recipient=viewer, status=ConnectionRequest.PENDING
+        ).first()
+        if incoming:
+            return {'state': 'pending_incoming', 'request_id': incoming.pk}
+        
+        last_declined = ConnectionRequest.objects.filter(
+            sender=viewer, recipient=other_user, status=ConnectionRequest.DECLINED,
+        ).first()
+        if last_declined and last_declined.responded_at and last_declined.responded_at > timezone.now() - RESEND_COOLDOWN:
+            return {'state': 'cooldown'}
+
+        return {'state': 'none'}

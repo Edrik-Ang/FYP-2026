@@ -10,29 +10,26 @@ from ..services.relationship_service import RelationshipService
 
 @login_required
 def connection_request_list_view(request):
-    incoming = ConnectionRequest.objects.filter(
-        recipient=request.user
-    ).select_related('sender').order_by('-created_at')
-    outgoing = ConnectionRequest.objects.filter(
-        sender=request.user
-    ).select_related('recipient').order_by('-created_at')
+    connections = RelationshipService.get_connection_overview(request.user)
     return render(request, 'identities/connection_request_list.html', {
-        'incoming': incoming, 'outgoing': outgoing,
+        'connections': connections,
     })
 
 
 @login_required
 def connection_request_create_view(request):
-    error = None
-    if request.method == 'POST':
-        recipient_username = request.POST.get('recipient_username', '').strip()
-        try:
-            RelationshipService.create_request(request.user, recipient_username)
-            messages.success(request, f"Connection request sent to '{recipient_username}'.")
-            return redirect('connection-request-list')
-        except ValidationError as e:
-            error = e.detail[0] if isinstance(e.detail, list) else e.detail
-    return render(request, 'identities/connection_request_form.html', {'error': error})
+    if request.method != 'POST':
+        return redirect('connection-request-list')
+    
+    recipient_username = request.POST.get('recipient_username', '').strip()
+    next_url = request.POST.get('next') or 'connection-request-list'
+    try:
+        RelationshipService.create_request(request.user, recipient_username)
+        messages.success(request, f"Connection request sent to '{recipient_username}'.")
+    except ValidationError as e:
+        error_message = e.detail[0] if isinstance(e.detail, list) else e.detail
+        messages.error(request, str(error_message))
+    return redirect(next_url)
 
 
 @login_required

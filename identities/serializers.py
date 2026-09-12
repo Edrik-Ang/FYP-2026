@@ -235,10 +235,6 @@ class LinkedAccountSerializer(serializers.ModelSerializer):
         fields = ['id', 'provider', 'provider_uid', 'raw_data', 'linked_at']
         read_only_fields = fields ## read only end to end, mutations handled by service layer, not serializer.
 
-## Other serializers later (Steam , LinkedIn)
-
-
-# Business logic (is_discovrable gate, cooldownn, status transition in RelationshipService). 
 class ConnectionRequestSerializer(serializers.ModelSerializer):
     sender_username = serializers.CharField(source='sender.username', read_only=True)
     recipient_username = serializers.CharField(source='recipient.username', read_only=True)
@@ -246,10 +242,17 @@ class ConnectionRequestSerializer(serializers.ModelSerializer):
     class Meta:
         model = ConnectionRequest
         fields = ['id', 'sender_username', 'recipient_username', 'status', 'created_at', 'responded_at']
-        read_only_fields = fields # all read only
-
+        read_only_fields = fields
+        
 
 ## input serializer for sending a requet, same shape as LoginSerializer
 # only parses/validates the presence of recipient_username bfore handing off to service.
 class ConnectionRequestCreateSerializer(serializers.Serializer):
     recipient_username = serializers.CharField(required=True, trim_whitespace=True)
+
+## dict-shaped output serializer for connection overview, each entry computed by RelationshipService.get_connection_overview.
+class ConnectionOverviewSerializer(serializers.Serializer):
+    username = serializers.CharField(source='other_user.username')
+    state = serializers.CharField()
+    request_id = serializers.IntegerField(required=False, allow_null=True)
+    relationship_id = serializers.IntegerField(required=False, allow_null=True)

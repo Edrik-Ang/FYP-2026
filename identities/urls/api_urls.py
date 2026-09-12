@@ -14,8 +14,7 @@ from ..api import (
 from ..api.dashboard_views import DashBoardAPIView
 from ..api.api_github import GithubMaterialAPIView
 from ..api.connection_request_views import (
-    ConnectionRequestCreateAPIView, IncomingConnectionRequestListAPIView,
-    OutgoingConnectionRequestListAPIView, ConnectionRequestAcceptAPIView, ConnectionRequestDeclineAPIView,
+    ConnectionOverviewAPIView, ConnectionRequestCreateAPIView, ConnectionRequestAcceptAPIView, ConnectionRequestDeclineAPIView,
 )
 
 
@@ -87,8 +86,7 @@ urlpatterns = [
 
      # Connection Request APIs
     path('connection-requests/', ConnectionRequestCreateAPIView.as_view(), name='connection-request-create-api'),
-    path('connection-requests/incoming/', IncomingConnectionRequestListAPIView.as_view(), name='connection-request-incoming-api'),
-    path('connection-requests/outgoing/', OutgoingConnectionRequestListAPIView.as_view(), name='connection-request-outgoing-api'),
+    path('connection-requests/overview/', ConnectionOverviewAPIView.as_view(), name='connection-request-overview-api'),
     path('connection-requests/<int:pk>/accept/', ConnectionRequestAcceptAPIView.as_view(), name='connection-request-accept-api'),
     path('connection-requests/<int:pk>/decline/', ConnectionRequestDeclineAPIView.as_view(), name='connection-request-decline-api'),
 
