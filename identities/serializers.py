@@ -2,7 +2,7 @@
 ## handles serialization and deserialization of data for the identities app
 ## converts complex data types like model instances into native Python datatypes that can then be easily rendered into JSON, XML or other content types.
 import re
-
+from django.db.models import Q
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password as django_validate_password
 from django.core.exceptions import ValidationError as DjangoValidationError
@@ -151,6 +151,14 @@ class RelationshipSerializer(serializers.ModelSerializer):
 
         if request and target_user == request.user: ## Prevent self-referential relationships
             raise serializers.ValidationError("You cannot create a relationship with yourself.")
+
+        if not self.instance and request and target_user:  ## only gate NEW relationships 
+            is_connected = ConnectionRequest.objects.filter(
+                Q(sender=request.user, recipient=target_user) | Q(sender=target_user, recipient=request.user),
+                status=ConnectionRequest.ACCEPTED,
+            ).exists()
+            if not is_connected:
+                raise serializers.ValidationError("You can only create relationships with users you are connected to.")
 
         if not contexts: ## Relationship must have min 1 context
             raise serializers.ValidationError("Select at least one context.")

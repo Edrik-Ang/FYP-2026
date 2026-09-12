@@ -11,7 +11,7 @@ from ..services.relationship_service import RelationshipService
 @login_required
 def connection_request_list_view(request):
     incoming = ConnectionRequest.objects.filter(
-        recipient=request.user, status=ConnectionRequest.PENDING
+        recipient=request.user
     ).select_related('sender').order_by('-created_at')
     outgoing = ConnectionRequest.objects.filter(
         sender=request.user

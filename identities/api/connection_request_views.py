@@ -30,7 +30,7 @@ class IncomingConnectionRequestListAPIView(generics.ListAPIView):
 
     def get_queryset(self):
         return ConnectionRequest.objects.filter(
-            recipient=self.request.user, status=ConnectionRequest.PENDING
+            recipient=self.request.user
         ).select_related('sender').order_by('-created_at')
 
 

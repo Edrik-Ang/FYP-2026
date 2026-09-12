@@ -15,6 +15,7 @@
             {% if user.is_authenticated %}
                 <a href="{% url 'dashboard' %}" class="hover:underline">Dashboard</a>
                 <a href="{% url 'context-list' %}" class="hover:underline">Contexts</a>
+                <a href="{% url 'connection-request-list' %}" class="hover:underline">Connections</a>
                 <form action="{% url 'logout' %}" method="post" class="inline">
                     {% csrf_token %}
                     <button type="submit" class="hover:underline">Logout</button>

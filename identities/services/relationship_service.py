@@ -3,6 +3,7 @@
 from django.utils import timezone
 from django.contrib.auth import get_user_model
 from datetime import timedelta
+from django.db.models import Q
 from rest_framework.exceptions import ValidationError
 
 from identities.models import Relationship, ConnectionRequest, UserProfile
@@ -101,3 +102,13 @@ class RelationshipService:
         connection_request.responded_at = timezone.now()
         connection_request.save()
         return connection_request
+
+
+    @staticmethod
+    def get_connected_user_ids(user):
+        """ Returns a set of user IDs with an ACCEPTED CONNECTION_REQUEST with 'user', in either direct, Shared by RelationshipSerializer's creation gate
+         and relationship_create_view dropdown, so both stay synced. """
+        accepted_pairs = ConnectionRequest.objects.filter(
+            Q(sender=user) | Q(recipient=user), status=ConnectionRequest.ACCEPTED,
+        ).values_list('sender_id', 'recipient_id')
+        return {uid for pair in accepted_pairs for uid in pair if uid != user.id}

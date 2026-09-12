@@ -1,9 +1,22 @@
 ## seed_test_data.py — demo data for access-control scenarios across 4 users. Starting point for manual testing. will use APITestCase for automated tests.
 from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand
-from identities.models import IdentityProfile, Relationship, DisclosureRule, Context, RelationshipContext
+from identities.models import IdentityProfile, Relationship, DisclosureRule, Context, RelationshipContext, ConnectionRequest
+from django.utils import timezone
+
 
 User = get_user_model()
+
+## Covers all four status
+CONNECTION_REQUESTS  = [
+    ('John', 'Alice', ConnectionRequest.ACCEPTED),
+    ('John', 'Bob', ConnectionRequest.ACCEPTED),
+    ('Charlie', 'John', ConnectionRequest.ACCEPTED),
+    ('Alice', 'Bob', ConnectionRequest.ACCEPTED),
+    ('Bob', 'Charlie', ConnectionRequest.DECLINED),
+    ('Charlie', 'Bob', ConnectionRequest.ACCEPTED),
+    ('Alice', 'Charlie', ConnectionRequest.PENDING),
+]
 
 # Short, unique-enough bios per user/identity — no real people, generic roles.
 IDENTITY_DESCRIPTIONS = {
@@ -69,7 +82,9 @@ class Command(BaseCommand):
             # Fetched by the is_system flag rather than by name, so
             # this stays correct whether or not a registration signal already
             # created a default context for this user under a different name.
-            public_ctx, _ = Context.objects.get_or_create(owner=self.user, is_system=True)
+            public_ctx, _ = Context.objects.get_or_create(
+                owner=user, is_system=True, defaults={'name': 'Public'}
+            )
             contexts[(username, 'Public')] = public_ctx
 
             for context_name in CONTEXT_NAMES:
@@ -87,6 +102,15 @@ class Command(BaseCommand):
                 )
                 identities[(username, context_name)] = identity
 
+
+        for sender_name, recipient_name, req_status in CONNECTION_REQUESTS:
+            sender = users[sender_name]
+            recipient = users[recipient_name]
+            defaults = {'status': req_status}
+            if req_status != ConnectionRequest.PENDING:
+                defaults['responded_at'] = timezone.now()
+            ConnectionRequest.objects.get_or_create(sender=sender, recipient=recipient, defaults=defaults)
+        
         for owner_name, targets in RELATIONSHIPS.items():
             owner = users[owner_name]
             for target_name, context_names in targets.items():
@@ -126,7 +150,8 @@ class Command(BaseCommand):
                 field_name='description', defaults={'is_visible': True},
             )
 
-        self.stdout.write(self.style.SUCCESS(
-            f'Seeded {len(users)} users, {len(contexts)} contexts, '
-            f'{len(identities)} identities, and relationships across the group.'
-        ))
+            self.stdout.write(self.style.SUCCESS(
+                f'Seeded {len(users)} users, {len(contexts)} contexts, '
+                f'{len(identities)} identities, {len(CONNECTION_REQUESTS)} connection requests, '
+                f'and relationships across the group.'
+            ))

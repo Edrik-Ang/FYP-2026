@@ -13,19 +13,27 @@
     {% for req in incoming %}
         <div class="bg-white rounded-lg shadow-sm p-4 mb-3">
             <p class="font-semibold mb-2">{{ req.sender.username }}</p>
-            <div class="flex gap-3 items-center">
-                <form method="post" action="{% url 'connection-request-accept' req.pk %}">
-                    {% csrf_token %}
-                    <button type="submit" class="text-sm text-green-600 hover:underline">Accept</button>
-                </form>
-                <form method="post" action="{% url 'connection-request-decline' req.pk %}">
-                    {% csrf_token %}
-                    <button type="submit" class="text-sm text-red-600 hover:underline">Decline</button>
-                </form>
-            </div>
+            {% if req.status == 'pending' %}
+                <div class="flex gap-3 items-center">
+                    <form method="post" action="{% url 'connection-request-accept' req.pk %}">
+                        {% csrf_token %}
+                        <button type="submit" class="text-sm text-green-600 hover:underline">Accept</button>
+                    </form>
+                    <form method="post" action="{% url 'connection-request-decline' req.pk %}">
+                        {% csrf_token %}
+                        <button type="submit" class="text-sm text-red-600 hover:underline">Decline</button>
+                    </form>
+                </div>
+            {% else %}
+                <span class="text-xs px-2 py-0.5 rounded-full
+                    {% if req.status == 'accepted' %}bg-green-50 text-green-700
+                    {% else %}bg-red-50 text-red-700{% endif %}">
+                    {{ req.get_status_display }}
+                </span>
+            {% endif %}
         </div>
     {% empty %}
-        <p class="text-gray-500 text-sm mb-6">No pending requests.</p>
+        <p class="text-gray-500 text-sm mb-6">No requests yet.</p>
     {% endfor %}
 
     <h2 class="text-lg font-semibold mb-3 mt-8">Outgoing</h2>

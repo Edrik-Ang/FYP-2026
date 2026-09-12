@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import IdentityProfile, LinkedAccount, Relationship, DisclosureRule, Context, RelationshipContext
+from .models import IdentityProfile, LinkedAccount, Relationship, DisclosureRule, Context, RelationshipContext, ConnectionRequest
 
 admin.site.register(IdentityProfile)
 admin.site.register(Relationship)
@@ -7,6 +7,7 @@ admin.site.register(DisclosureRule)
 admin.site.register(Context)
 admin.site.register(RelationshipContext)
 admin.site.register(LinkedAccount)
+admin.site.register(ConnectionRequest)
 
 ## Django admin creds for testing:
 ##username: admin
