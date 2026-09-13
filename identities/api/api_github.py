@@ -26,8 +26,5 @@ class GithubMaterialAPIView(APIView):
 
         for field in request.data.get('fields', []):
             if field in GITHUB_MATERIALIZE_FIELDS:
-                try:
-                    IdentityService.set_attribute(identity, key=field, value=account.raw_data.get(field), source='github')
-                except Exception as e:
-                    return Response({'detail': f"Error materializing field '{field}': {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
+                IdentityService.set_attribute(identity, key=field, value=account.raw_data.get(field), source='github')
         return Response({'detail': "Fields materialized successfully."}, status=status.HTTP_200_OK)
