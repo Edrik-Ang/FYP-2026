@@ -153,7 +153,7 @@ class GithubServiceRefreshTests(TestCase):
 
     def test_refresh_with_no_linked_account_raises(self):
         with self.assertRaises(ValidationError):
-            GithubService.refresh_github_token(self.user)
+            GithubService.refresh_github_data(self.user)
 
     def test_refresh_with_expired_token_raises(self):
         LinkedAccount.objects.create(
@@ -161,7 +161,7 @@ class GithubServiceRefreshTests(TestCase):
             access_token='gho_old', token_expires_at=timezone.now() - timedelta(hours=1),
         )
         with self.assertRaises(ValidationError):
-            GithubService.refresh_github_token(self.user)
+            GithubService.refresh_github_data(self.user)
 
     @patch('identities.services.github_service.GithubService.fetch_profile_data')
     def test_refresh_updates_raw_data(self, mock_fetch):
@@ -170,7 +170,7 @@ class GithubServiceRefreshTests(TestCase):
             user=self.user, provider='github', provider_uid='111',
             access_token='gho_current', token_expires_at=timezone.now() + timedelta(hours=1),
         )
-        account = GithubService.refresh_github_token(self.user)
+        account = GithubService.refresh_github_data(self.user)
         self.assertEqual(account.raw_data['bio'], 'updated bio')
 
     @patch('identities.services.github_service.GithubService.fetch_profile_data')
@@ -181,9 +181,9 @@ class GithubServiceRefreshTests(TestCase):
             user=self.user, provider='github', provider_uid='111',
             access_token='gho_current', token_expires_at=None,
         )
-        account = GithubService.refresh_github_token(self.user)
+        account = GithubService.refresh_github_data(self.user)
         self.assertEqual(account.raw_data['bio'], 'no expiry case')
-
+        
 
 class GithubMaterializeAPIViewTests(APITestCase):
     def setUp(self):

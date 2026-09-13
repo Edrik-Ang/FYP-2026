@@ -152,9 +152,9 @@ class GithubService:
 
 
     @staticmethod
-    def refresh_github_token(user):
-        """ Refetches profile data for an already linked Github accounnt, using stored access_token. If expired, the API call will 401
-        reutnrs as ValidationError than a raw exception, since automatic token refresh not implemented yet. 
+    def refresh_github_data(user):
+        """ Refetches profile data for an already linked Github account, using stored access_token. If expired, the API call will 401
+        returns as ValidationError than a raw exception, since automatic token refresh not implemented yet. 
         """
         account = LinkedAccount.objects.filter(user=user, provider='github').first()
         if not account:
