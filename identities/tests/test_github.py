@@ -5,7 +5,9 @@ import requests
 from django.contrib.auth import get_user_model
 from django.test import TestCase, RequestFactory
 from django.utils import timezone
+from django.urls import reverse
 from datetime import timedelta
+from django.test import TestCase, RequestFactory
 from rest_framework import status
 from rest_framework.test import APITestCase
 from rest_framework.exceptions import ValidationError
@@ -183,7 +185,159 @@ class GithubServiceRefreshTests(TestCase):
         )
         account = GithubService.refresh_github_data(self.user)
         self.assertEqual(account.raw_data['bio'], 'no expiry case')
-        
+
+
+class GithubLinkViewTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username='alice', password='pass12345')
+
+    def test_requires_login(self):
+        response = self.client.get(reverse('github-link'))
+        self.assertEqual(response.status_code, 302)
+        self.assertIn(reverse('login'), response.url)
+
+    @patch('identities.views.github_views.GithubService.build_auth_url')
+    def test_redirects_to_github_auth_url(self, mock_build_url):
+        mock_build_url.return_value = 'https://github.com/login/oauth/authorize?fake=1'
+        self.client.force_login(self.user)
+        response = self.client.get(reverse('github-link'))
+        self.assertRedirects(response, 'https://github.com/login/oauth/authorize?fake=1', fetch_redirect_response=False)
+
+
+class GithubCallbackViewTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username='alice', password='pass12345')
+        self.client.force_login(self.user)
+
+    @patch('identities.views.github_views.GithubService.link_github_account')
+    @patch('identities.views.github_views.GithubService.verify_callback')
+    def test_success_links_account_and_redirects_to_dashboard(self, mock_verify, mock_link):
+        mock_verify.return_value = {'access_token': 'gho_test'}
+        response = self.client.get(reverse('github-callback'))
+        self.assertRedirects(response, reverse('dashboard'))
+        mock_link.assert_called_once_with(self.user, {'access_token': 'gho_test'})
+
+    @patch('identities.views.github_views.GithubService.verify_callback')
+    def test_failed_verification_shows_error_message(self, mock_verify):
+        mock_verify.side_effect = ValidationError("Github login session expired or invalid. Please try again.")
+        response = self.client.get(reverse('github-callback'), follow=True)
+        stored_messages = [str(m) for m in response.context['messages']]
+        self.assertTrue(any('expired' in m or 'invalid' in m for m in stored_messages))
+
+
+class GithubUnlinkViewTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username='alice', password='pass12345')
+        self.client.force_login(self.user)
+        LinkedAccount.objects.create(user=self.user, provider='github', provider_uid='111')
+
+    def test_post_unlinks_account(self):
+        response = self.client.post(reverse('github-unlink'))
+        self.assertRedirects(response, reverse('dashboard'))
+        self.assertFalse(LinkedAccount.objects.filter(user=self.user, provider='github').exists())
+
+    def test_get_returns_405(self):
+        response = self.client.get(reverse('github-unlink'))
+        self.assertEqual(response.status_code, 405)
+        self.assertTrue(LinkedAccount.objects.filter(user=self.user, provider='github').exists())
+
+    def test_requires_login(self):
+        self.client.logout()
+        response = self.client.post(reverse('github-unlink'))
+        self.assertEqual(response.status_code, 302)
+        self.assertIn(reverse('login'), response.url)
+
+
+class GithubRefreshViewTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username='alice', password='pass12345')
+        self.client.force_login(self.user)
+
+    @patch('identities.views.github_views.GithubService.refresh_github_data')
+    def test_post_refreshes_and_redirects(self, mock_refresh):
+        response = self.client.post(reverse('github-refresh'))
+        self.assertRedirects(response, reverse('dashboard'))
+        mock_refresh.assert_called_once_with(self.user)
+
+    @patch('identities.views.github_views.GithubService.refresh_github_data')
+    def test_no_linked_account_shows_error_not_500(self, mock_refresh):
+        mock_refresh.side_effect = ValidationError("No linked Github to refresh. ")
+        response = self.client.post(reverse('github-refresh'), follow=True)
+        self.assertEqual(response.status_code, 200)
+        stored_messages = [str(m) for m in response.context['messages']]
+        self.assertTrue(any('No linked Github' in m for m in stored_messages))
+
+    def test_get_returns_405(self):
+        response = self.client.get(reverse('github-refresh'))
+        self.assertEqual(response.status_code, 405)
+
+
+class GithubProfileViewTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username='alice', password='pass12345')
+        self.client.force_login(self.user)
+        self.context = Context.objects.create(owner=self.user, name='Work')
+        self.identity = IdentityProfile.objects.create(owner=self.user, context=self.context, identity_name='Work Me')
+        self.linked_account = LinkedAccount.objects.create(
+            user=self.user, provider='github', provider_uid='111',
+            raw_data={
+                'login': 'alice-gh', 'name': 'Alice', 'bio': 'hello', 'company': 'Acme',
+                'location': 'Remote', 'avatar_url': 'a.png', 'html_url': 'https://github.com/alice-gh',
+            },
+        )
+
+    def test_get_requires_linked_account(self):
+        self.linked_account.delete()
+        response = self.client.get(reverse('github-profile'))
+        self.assertEqual(response.status_code, 404)
+
+    def test_get_renders_with_identities_and_linked_account(self):
+        response = self.client.get(reverse('github-profile'))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['linked_account'], self.linked_account)
+        self.assertIn(self.identity, list(response.context['identities']))
+
+    def test_post_materializes_selected_fields_onto_identity(self):
+        response = self.client.post(reverse('github-profile'), {
+            'identity_id': self.identity.pk,
+            'fields': ['login', 'bio'],
+        })
+        self.assertRedirects(response, reverse('github-profile'))
+        self.assertTrue(IdentityAttribute.objects.filter(identity=self.identity, key='login', source='github').exists())
+        self.assertTrue(IdentityAttribute.objects.filter(identity=self.identity, key='bio', source='github').exists())
+
+    def test_post_ignores_fields_not_in_allowlist(self):
+        response = self.client.post(reverse('github-profile'), {
+            'identity_id': self.identity.pk,
+            'fields': ['access_token'],  # not in GITHUB_MATERIALIZE_FIELDS
+        })
+        self.assertRedirects(response, reverse('github-profile'))
+        self.assertFalse(IdentityAttribute.objects.filter(identity=self.identity, key='access_token').exists())
+
+    def test_post_rejects_identity_owned_by_another_user(self):
+        other_user = User.objects.create_user(username='bob', password='pass12345')
+        other_context = Context.objects.create(owner=other_user, name='Bob Ctx')
+        bob_identity = IdentityProfile.objects.create(owner=other_user, context=other_context, identity_name='Bob Only')
+
+        response = self.client.post(reverse('github-profile'), {
+            'identity_id': bob_identity.pk,
+            'fields': ['login'],
+        }, follow=True)
+        self.assertFalse(IdentityAttribute.objects.filter(identity=bob_identity, key='login').exists())
+        stored_messages = [str(m) for m in response.context['messages']]
+        self.assertTrue(any('Invalid identity' in m for m in stored_messages))
+
+    def test_post_repeated_materialize_overwrites_not_duplicates(self):
+        self.client.post(reverse('github-profile'), {'identity_id': self.identity.pk, 'fields': ['login']})
+        self.client.post(reverse('github-profile'), {'identity_id': self.identity.pk, 'fields': ['login']})
+        self.assertEqual(IdentityAttribute.objects.filter(identity=self.identity, key='login').count(), 1)
+
+    def test_requires_login(self):
+        self.client.logout()
+        response = self.client.get(reverse('github-profile'))
+        self.assertEqual(response.status_code, 302)
+        self.assertIn(reverse('login'), response.url)
+    
 
 class GithubMaterializeAPIViewTests(APITestCase):
     def setUp(self):

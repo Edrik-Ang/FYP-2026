@@ -72,6 +72,6 @@ def github_unlink_view(request):
 def github_refresh_view(request):
     """view to refresh Github access token for logged-in user."""
     if request.method == 'POST':
-        GithubService.refresh_github_token(request.user)
+        GithubService.refresh_github_data(request.user)
         messages.success(request, "Github access token refreshed successfully.")
     return redirect('dashboard')
