@@ -5,17 +5,77 @@
 {% block content %}
     <h1 class="text-2xl font-bold mb-6">Account Settings</h1>
 
-    <form method="post" class="bg-white rounded-lg shadow-sm p-4 max-w-sm">
-        {% csrf_token %}
-        <label class="flex items-center gap-2 text-sm mb-1">
-            <input type="checkbox" name="is_discoverable" {% if profile.is_discoverable %}checked{% endif %} class="rounded border-gray-300">
-            Discoverable — allow other users to find and connect with you
-        </label>
-        <p class="text-xs text-gray-500 mb-4">Turning this off only stops new people from finding or reaching you — existing connections and relationships are unaffected.</p>
-        <button type="submit" class="text-sm px-4 py-1.5 rounded bg-blue-600 text-white hover:bg-blue-700">Save</button>
-    </form>
+    <div class="max-w-sm space-y-8">
 
-    <p class="mt-6">
+        <section>
+            <h2 class="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">Visibility</h2>
+            <form method="post" class="bg-white rounded-lg shadow-sm p-4">
+                {% csrf_token %}
+                <label class="flex items-center gap-2 text-sm mb-1">
+                    <input type="checkbox" name="is_discoverable" {% if profile.is_discoverable %}checked{% endif %} class="rounded border-gray-300">
+                    Discoverable — allow other users to find and connect with you
+                </label>
+                <p class="text-xs text-gray-500 mb-4">Turning this off only stops new people from finding or reaching you — existing connections and relationships are unaffected.</p>
+                <button type="submit" class="text-sm px-4 py-1.5 rounded bg-blue-600 text-white hover:bg-blue-700">Save</button>
+            </form>
+        </section>
+
+        <section>
+            <h2 class="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">Email</h2>
+            <form method="post" action="{% url 'account-email-change' %}" class="bg-white rounded-lg shadow-sm p-4">
+                {% csrf_token %}
+                <label class="block text-sm font-medium mb-1" for="id_email">Email</label>
+                <input type="email" name="email" id="id_email" value="{{ request.user.email }}" class="w-full border rounded px-2 py-1 text-sm mb-2">
+                <label class="block text-sm font-medium mb-1" for="id_email_current_password">Current password</label>
+                <input type="password" name="current_password" id="id_email_current_password" class="w-full border rounded px-2 py-1 text-sm mb-2">
+                {% if email_errors %}
+                    <ul class="text-xs text-red-600 mb-2">
+                        {% for field, errs in email_errors.items %}{% for e in errs %}<li>{{ e }}</li>{% endfor %}{% endfor %}
+                    </ul>
+                {% endif %}
+                <button type="submit" class="text-sm px-4 py-1.5 rounded bg-blue-600 text-white hover:bg-blue-700">Update email</button>
+            </form>
+        </section>
+
+        <section>
+            <h2 class="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">Password</h2>
+            <form method="post" action="{% url 'account-password-change' %}" class="bg-white rounded-lg shadow-sm p-4">
+                {% csrf_token %}
+                <label class="block text-sm font-medium mb-1" for="id_current_password">Current password</label>
+                <input type="password" name="current_password" id="id_current_password" class="w-full border rounded px-2 py-1 text-sm mb-2">
+                <label class="block text-sm font-medium mb-1" for="id_new_password">New password</label>
+                <input type="password" name="new_password" id="id_new_password" class="w-full border rounded px-2 py-1 text-sm mb-2">
+                <label class="block text-sm font-medium mb-1" for="id_new_password2">Confirm new password</label>
+                <input type="password" name="new_password2" id="id_new_password2" class="w-full border rounded px-2 py-1 text-sm mb-2">
+                {% if password_errors %}
+                    <ul class="text-xs text-red-600 mb-2">
+                        {% for field, errs in password_errors.items %}{% for e in errs %}<li>{{ e }}</li>{% endfor %}{% endfor %}
+                    </ul>
+                {% endif %}
+                <button type="submit" class="text-sm px-4 py-1.5 rounded bg-blue-600 text-white hover:bg-blue-700">Update password</button>
+            </form>
+        </section>
+
+        <section class="pt-4 border-t border-gray-200">
+            <h2 class="text-xs font-semibold uppercase tracking-wide text-red-600 mb-2">Danger zone</h2>
+            <form method="post" action="{% url 'account-delete' %}" class="bg-white rounded-lg shadow-sm p-4 border border-red-200"
+                  onsubmit="return confirm('This permanently deletes your account and all your data. This cannot be undone. Continue?');">
+                {% csrf_token %}
+                <p class="text-sm text-red-700 mb-2">Deleting your account is permanent and cannot be undone.</p>
+                <label class="block text-sm font-medium mb-1" for="id_delete_current_password">Current password</label>
+                <input type="password" name="current_password" id="id_delete_current_password" class="w-full border rounded px-2 py-1 text-sm mb-2">
+                {% if delete_errors %}
+                    <ul class="text-xs text-red-600 mb-2">
+                        {% for field, errs in delete_errors.items %}{% for e in errs %}<li>{{ e }}</li>{% endfor %}{% endfor %}
+                    </ul>
+                {% endif %}
+                <button type="submit" class="text-sm px-4 py-1.5 rounded bg-red-600 text-white hover:bg-red-700">Delete account</button>
+            </form>
+        </section>
+
+    </div>
+
+    <p class="mt-8">
         <a href="{% url 'dashboard' %}" class="text-sm text-gray-500 hover:underline">Back to dashboard</a>
     </p>
 {% endblock %}

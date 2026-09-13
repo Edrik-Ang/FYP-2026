@@ -26,17 +26,7 @@ class RegisterSerializer(serializers.ModelSerializer):
         fields = ['username', 'email', 'password', 'password2']
 
     def validate_password(self,value):
-        ## Runs AUTH_PASSWORD_VALIDATORS from settings.py to ensure password meets security requirements
-        ## MinimumLengthValidator default is 8, and similarity/common-password/all-numeric checks.
-        try:
-            django_validate_password(value)
-        except DjangoValidationError as e:
-            raise serializers.ValidationError(list(e.messages))
-
-        # custom regex validation (mix of letters and digits
-        if not re.search(r'[A-Za-z]', value) or not re.search(r'\d', value):
-            raise serializers.ValidationError("Password must contain at least one letter and one digit.")
-        return value
+        return validate_strong_password(value)
 
     def validate(self, attrs):
         if attrs['password'] != attrs['password2']:
@@ -264,3 +254,68 @@ class UserProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserProfile
         fields = ['is_discoverable']
+
+def validate_strong_password(value, user=None):
+    """
+    Shared function for checking password strength for RegisterSerializer and PasswordChangeSerializer.
+    """
+    try: 
+        django_validate_password(value, user=user)
+    except DjangoValidationError as e:
+        raise serializers.ValidationError(list(e.messages))
+    if not re.search(r'[A-Za-z]', value) or not re.search(r'\d', value):
+        raise serializers.ValidationError("Password must contain at least one letter and one digit.")
+    return value
+
+
+class EmailChangeSerializer(serializers.Serializer):
+    email= serializers.EmailField(required=True)
+    current_password = serializers.CharField(required=True, write_only=True, trim_whitespace=False)
+
+    def validate_current_password(self, value):
+        user = self.context['request'].user
+        if not user.check_password(value):
+            raise serializers.ValidationError("Current password is incorrect.")
+        return value
+
+    def validate_email(self, value):
+        user = self.context['request'].user
+        if value == user.email:
+            raise serializers.ValidationError("This is already your current email.")
+        if User.objects.exclude(pk=user.pk).filter(email=value).exists():
+            raise serializers.ValidationError("This email is already in use.")
+        return value
+
+
+class PasswordChangeSerializer(serializers.Serializer):
+    current_password = serializers.CharField(required=True, write_only=True, trim_whitespace=False)
+    new_password = serializers.CharField(required=True, write_only=True, min_length=8, max_length=20, trim_whitespace=False)
+    new_password2 = serializers.CharField(required=True, write_only=True, max_length=20, label="Confirm New Password", trim_whitespace=False)
+
+    def validate_current_password(self, value):
+        user = self.context['request'].user
+        if not user.check_password(value):
+            raise serializers.ValidationError("Current password is incorrect.")
+        return value
+
+    def validate_new_password(self, value):
+        user = self.context['request'].user
+        return validate_strong_password(value, user=user)
+
+    def validate(self, attrs):
+        if attrs['new_password'] != attrs['new_password2']:
+            raise serializers.ValidationError({"new_password2": "New password fields didn't match."})
+        if attrs['current_password'] == attrs['new_password']:
+            raise serializers.ValidationError({"new_password": "New password cannot be the same as the current password."})
+        return attrs
+
+
+
+class AccountDeleteSerializer(serializers.Serializer):
+    current_password = serializers.CharField(required=True, write_only=True, trim_whitespace=False)
+
+    def validate_current_password(self, value):
+        user = self.context['request'].user
+        if not user.check_password(value):
+            raise serializers.ValidationError("Current password is incorrect.")
+        return value

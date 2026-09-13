@@ -22,6 +22,7 @@ from identities.views.connection_request_views import (
     connection_request_list_view, connection_request_create_view,
     connection_request_accept_view, connection_request_decline_view,
 )
+from identities.views.accounts_views import email_change_view, password_change_view, account_delete_view
 
 
 urlpatterns = [
@@ -35,6 +36,9 @@ urlpatterns = [
     path('logout/', WebLogoutView.as_view(), name='logout'),
     path('register/', register_view, name='register'),
     path('account-settings/', account_settings_view, name='account-settings'),
+    path('account-settings/email/', email_change_view, name='account-email-change'),
+    path('account-settings/password/', password_change_view, name='account-password-change'),
+    path('account-settings/delete/', account_delete_view, name='account-delete'),
 
     # Web-facing password reset )
     path('password-reset/', django_auth_views.PasswordResetView.as_view(template_name='registration/password_reset_form.html'), name='password_reset'),

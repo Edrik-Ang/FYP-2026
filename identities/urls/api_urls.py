@@ -17,6 +17,7 @@ from ..api.api_github import GithubMaterialAPIView
 from ..api.connection_request_views import (
     ConnectionOverviewAPIView, ConnectionRequestCreateAPIView, ConnectionRequestAcceptAPIView, ConnectionRequestDeclineAPIView,
 )
+from identities.api.account_views import EmailChangeAPIView, PasswordChangeAPIView, AccountDeleteAPIView
 
 
 urlpatterns = [
@@ -30,6 +31,10 @@ urlpatterns = [
 
     ## API for password resets (Later do)
     path('password_reset/', include('django_rest_passwordreset.urls', namespace='password_reset_api')),
+    path('account/email/', EmailChangeAPIView.as_view(), name='account-email-change-api'),
+    path('account/password/', PasswordChangeAPIView.as_view(), name='account-password-change-api'),
+    path('account/', AccountDeleteAPIView.as_view(), name='account-delete-api'),
+
 
     ## API Path for dashboard data
     path('dashboard/', DashBoardAPIView.as_view(), name='dashboard-api'),
