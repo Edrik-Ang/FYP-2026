@@ -6,6 +6,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from identities.models import IdentityProfile, LinkedAccount
 from identities.services.identity_service import IdentityService
 from identities.security.error_handling import handle_integration_errors
+from django.views.decorators.http import require_POST
 
 from identities.services.steam_service import SteamService
 
@@ -28,6 +29,7 @@ def steam_callback_view(request):
     return redirect("dashboard")
 
 @login_required
+@require_POST
 def steam_unlink_view(request):
     """View to unlink Steam account from the logged-in user."""
     if request.method == "POST":
@@ -37,6 +39,7 @@ def steam_unlink_view(request):
 
 
 @login_required
+@require_POST
 @handle_integration_errors('dashboard', 'Steam')  # Use the decorator for error handling
 def steam_refresh_view(request):
     if request.method == "POST":

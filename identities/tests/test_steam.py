@@ -416,11 +416,9 @@ class SteamUnlinkViewTests(TestCase):
         self.assertRedirects(response, reverse('dashboard'))
         self.assertFalse(LinkedAccount.objects.filter(user=self.user, provider='steam').exists())
 
-    def test_get_does_not_unlink(self):
-        # steam_unlink_view only acts on request.method == 'POST' -- a GET should
-        # redirect without touching the linked account.
+    def test_get_returns_405(self):
         response = self.client.get(reverse('steam-unlink'))
-        self.assertRedirects(response, reverse('dashboard'))
+        self.assertEqual(response.status_code, 405)
         self.assertTrue(LinkedAccount.objects.filter(user=self.user, provider='steam').exists())
 
     def test_requires_login(self):

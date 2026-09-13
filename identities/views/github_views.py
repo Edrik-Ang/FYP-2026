@@ -3,12 +3,13 @@
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
 from django.contrib import messages
-
+from django.views.decorators.http import require_POST
 from identities.models import IdentityProfile, LinkedAccount
 from identities.services.github_service import GITHUB_MATERIALIZE_FIELDS, GithubService
 from identities.services.identity_service import IdentityService
 
 from identities.security.error_handling import handle_integration_errors
+
 
 @login_required
 def github_link_view(request):
@@ -56,6 +57,7 @@ def github_profile_view(request):
 
 
 @login_required
+@require_POST
 def github_unlink_view(request):
     """View to unlink Github account from logged-in user."""
     if request.method == 'POST':
@@ -65,6 +67,7 @@ def github_unlink_view(request):
 
 
 @login_required
+@require_POST
 @handle_integration_errors('dashboard', 'Github') ## updated to use the decorator for error handling
 def github_refresh_view(request):
     """view to refresh Github access token for logged-in user."""
