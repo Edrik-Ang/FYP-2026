@@ -447,6 +447,10 @@ class SteamRefreshViewTests(TestCase):
         stored_messages = [str(m) for m in response.context['messages']]
         self.assertTrue(any('No linked Steam account' in m for m in stored_messages))
 
+    def test_get_returns_405(self):
+        response = self.client.get(reverse('steam-refresh'))
+        self.assertEqual(response.status_code, 405)
+
 
 class SteamProfileViewTests(TestCase):
     def setUp(self):
