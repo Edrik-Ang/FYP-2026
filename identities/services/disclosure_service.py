@@ -70,7 +70,7 @@ class DisclosureService:
                 identity=identity,
                 context__in=viewer_contexts, 
                 is_visible=True
-            ).values_list('field_name', flat=True))
+            ).values_list('field_name', flat=True).distinct())
 
 
     @staticmethod
