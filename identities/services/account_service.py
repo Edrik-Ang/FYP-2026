@@ -25,4 +25,5 @@ class AccountService:
         """ Hard delete user account. and Everyting under it (UserProfile, Contexts, Relationships, etc) will be cascade deleted. 
         Respects user privacy and GDPR. Relationship.target_user and ConnetionRequest.sender/recipient also CASCADE, so rows other users hold referencing this also siliently removed, rather than reassigned.
         """
+        AuthService.blacklist_all_tokens_for_user(user)
         user.delete()
