@@ -23,3 +23,9 @@ class DisclosureRuleDetailView(generics.RetrieveUpdateDestroyAPIView):
 
     def get_queryset(self):
         return DisclosureService.list_rules(self.request.user)
+
+    def perform_update(self, serializer):
+        DisclosureService.update_rule(serializer)
+
+    def perform_destroy(self, instance):
+        DisclosureService.delete_rule(instance)
