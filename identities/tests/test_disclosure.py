@@ -283,6 +283,26 @@ class DisclosureEngineTests(AuthenticatedAPITestCase):
         self.assertEqual(fields_by_identity[self.work_identity.pk], {'identity_name': 'Work Me'})
         self.assertEqual(fields_by_identity[self.personal_identity.pk], {'description': 'Weekend hiker.'})
 
+    def test_false_rule_does_not_override_true_grant_from_another_context(self):
+        # a relationship tagged with two contexts: one context explicitly denies
+        # a field, (is_visible=False), the other explicitly grants the SAME field.
+        relationship = Relationship.objects.create(owner=self.user, target_user=self.viewer)
+        relationship.contexts.set([self.work_context, self.personal_context])
+
+        DisclosureRule.objects.create(
+            identity=self.work_identity, context=self.work_context, field_name='identity_name', is_visible=False,
+        )
+        DisclosureRule.objects.create(
+            identity=self.work_identity, context=self.personal_context, field_name='identity_name', is_visible=True,
+        )
+
+        self.authenticate_as(self.viewer)
+        response = self.client.get(self.profile_url)
+
+        visible = response.data['visible_identities']
+        self.assertEqual(len(visible), 1)
+        self.assertEqual(visible[0]['visible_fields'], {'identity_name': 'Work Me'})
+
 
 class RelationshipPreviewAPITests(AuthenticatedAPITestCase):
     """Covers RelationshipPreviewAPIView -- reuses get_visible_identities
