@@ -85,3 +85,45 @@ class AccountSettingsWebViewTests(AuthenticatedAPITestCase):
         self.assertEqual(response.status_code, status.HTTP_302_FOUND)
         self.user.profile.refresh_from_db()
         self.assertFalse(self.user.profile.is_discoverable)
+
+
+class UserSearchAPITests(AuthenticatedAPITestCase):
+    """ Covers FR8: discoverable-user search behaviour."""
+    def setUp(self):
+        super().setUp()
+        self.url = reverse('user-search-api')
+
+    def test_search_returns_matching_discoverable_user(self):
+        User.objects.create_user(username='bob', password='testpass123')
+        User.objects.create_user(username='alice', password='testpass123')
+
+        response = self.client.get(self.url, {'search': 'bo'})
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        usernames = [result['username'] for result in response.data]
+
+        self.assertIn('bob', usernames)
+        self.assertNotIn('alice', usernames)
+
+    def test_search_excludes_matching_undiscoverable_user(self):
+        bob = User.objects.create_user(
+            username='bob',
+            password='testpass123'
+        )
+        User.objects.create_user(
+            username='bobby',
+            password='testpass123'
+        )
+
+        bob.profile.is_discoverable = False
+        bob.profile.save(update_fields=['is_discoverable'])
+
+        response = self.client.get(self.url, {'search': 'bob'})
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        usernames = [result['username'] for result in response.data]
+
+        self.assertNotIn('bob', usernames)
+        self.assertIn('bobby', usernames)
