@@ -29,12 +29,6 @@ def context_list_view(request):
 
 
 @login_required
-def context_list_view(request):
-    contexts = ContextService.get_contexts(request.user)
-    return render(request, 'identities/context_list.html', {'contexts': contexts})
-
-
-@login_required
 def context_create_view(request):
     errors = None
     if request.method == 'POST':
